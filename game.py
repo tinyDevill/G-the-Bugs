@@ -1,6 +1,6 @@
 import pygame
 from gameobject import Player, Platform, create_platforms
-from screen import load_assets, Camera, Lighting, draw_background, draw_objects
+from screen import load_assets, Camera, draw_background, draw_objects
 
 class Game:
     def __init__(self):
@@ -24,7 +24,6 @@ class Game:
 
         self.platforms = create_platforms(self.WIDTH, self.HEIGHT, self.platform_img, self.wall_img)
         self.camera = Camera(int(self.WIDTH / self.zoom), int(self.HEIGHT / self.zoom), self.zoom)
-        self.lighting = Lighting(800, 128)
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
@@ -37,17 +36,15 @@ class Game:
         if keys[pygame.K_SPACE]:
             self.player.jump()
 
-         # Check horizontal collisions
         self.check_horizontal_collisions(original_x)
 
     def check_horizontal_collisions(self, original_x):
         collided = False
         for platform in self.platforms:
             if self.player.rect.colliderect(platform.rect):
-                # Hitung arah gerakan
-                if self.player.rect.x < original_x:  # Bergerak ke kiri
+                if self.player.rect.x < original_x:
                     self.player.rect.left = platform.rect.right
-                else:  # Bergerak ke kanan
+                else:
                     self.player.rect.right = platform.rect.left
                 collided = True
         return collided
@@ -56,11 +53,11 @@ class Game:
         self.player.on_ground = False
         for platform in self.platforms:
             if self.player.rect.colliderect(platform.rect):
-                if self.player.velocity_y > 0:  # Falling down
+                if self.player.velocity_y > 0:
                     self.player.rect.bottom = platform.rect.top
                     self.player.velocity_y = 0
                     self.player.on_ground = True
-                elif self.player.velocity_y < 0:  # Jumping up
+                elif self.player.velocity_y < 0:
                     self.player.rect.top = platform.rect.bottom
                     self.player.velocity_y = 0
                 return True
@@ -75,24 +72,29 @@ class Game:
 
             self.handle_input()
             self.player.apply_gravity()
-            self.check_vertical_collisions()  # Check after gravity
-            
-            # Update camera
+            self.check_vertical_collisions()
             self.camera.update(self.player, self.WIDTH, self.HEIGHT)
+
+            # Rendering
+            self.screen.fill((255, 255, 255))  # Clear screen
             
-            # Gambar latar belakang
-            draw_background(self.screen, self.background, self.camera.rect, self.WIDTH, self.HEIGHT)
-            
-            # Gambar objek
-            draw_objects(self.screen, self.player, self.platforms, self.camera.rect, self.zoom)
-            
-            # Gambar pencahayaan
-            player_pos = (
-                (self.player.rect.x - self.camera.rect.x) * self.zoom,
-                (self.player.rect.y - self.camera.rect.y) * self.zoom
+            draw_background(
+                self.screen,
+                self.background,
+                self.camera.rect,
+                self.WIDTH,
+                self.HEIGHT
             )
-            self.lighting.draw(self.screen, player_pos, self.zoom)
             
+            draw_objects(
+                self.screen,
+                self.player,
+                self.platforms,
+                self.camera.rect,
+                self.zoom
+            )
+            
+            # Update display
             pygame.display.flip()
             self.clock.tick(self.FPS)
 
