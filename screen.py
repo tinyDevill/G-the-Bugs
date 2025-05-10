@@ -11,10 +11,11 @@ class Camera:
         self.rect.y = max(0, min(self.rect.y, world_height - self.rect.height))
 
 def load_assets(width, height):
-    bg = pygame.transform.scale(pygame.image.load("assets/bg.png"), (width, height))
-    platform_img = pygame.image.load("assets/tile_2.png")
-    wall_img = pygame.image.load("assets/dinding.png")
-    return bg, platform_img, wall_img
+    background = pygame.image.load("assets/image/bg.png").convert()
+    background = pygame.transform.scale(background, (width, height))
+    platform_img = pygame.image.load("assets/image/tile_1.png").convert_alpha()
+    wall_img = pygame.image.load("assets/image/wall.png").convert_alpha()
+    return background, platform_img, wall_img
 
 def draw_background(screen, background, camera_rect, screen_width, screen_height):
     bg_sub = background.subsurface(camera_rect)
@@ -22,18 +23,28 @@ def draw_background(screen, background, camera_rect, screen_width, screen_height
     screen.blit(bg_scaled, (0, 0))
 
 def draw_objects(screen, player, platforms, camera_rect, zoom):
-    # Scale images first
     for platform in platforms:
         platform.scale_image(zoom)
     player.scale_image(zoom)
-    
-    # Draw platforms
+
     for platform in platforms:
         platform.draw(screen, camera_rect, zoom)
-    
-    # Draw player
+
     player_pos = (
         (player.rect.x - camera_rect.x) * zoom,
         (player.rect.y - camera_rect.y) * zoom
     )
     screen.blit(player.scaled_image, player_pos)
+
+def draw_darkness_with_light(screen, player, camera_rect, zoom, light_radius=120):
+    overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 180))  # Semi transparan
+
+    player_pos = (
+        int((player.rect.centerx - camera_rect.x) * zoom),
+        int((player.rect.centery - camera_rect.y) * zoom)
+    )
+
+    pygame.draw.circle(overlay, (0, 0, 0, 0), player_pos, light_radius)
+
+    screen.blit(overlay, (0, 0))
