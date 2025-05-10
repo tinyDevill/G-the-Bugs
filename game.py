@@ -1,7 +1,10 @@
 import pygame
 import sys
-from gameobject import Player, Platform, create_platforms
-from screen import load_assets, Camera, draw_background, draw_objects
+import math
+from character import Player  # Mengimpor Player dari character.py
+from enemy import Enemy
+from gameobject import Platform, create_platforms
+from screen import load_assets, Camera, draw_background, draw_objects, draw_darkness_with_light
 
 class Game:
     def __init__(self):
@@ -9,36 +12,45 @@ class Game:
         self.WIDTH, self.HEIGHT = 800, 600
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("G The Bugs Draft")
-        
+
         self.clock = pygame.time.Clock()
         self.FPS = 45
         self.zoom = 1.5
-        self.state = "menu"  # State: menu, playing, paused
+        self.state = "menu"
         self.font = pygame.font.Font(None, 36)
 
         # Load assets
-        self.background, self.platform_img, self.wall_img, self.light_img = load_assets(self.WIDTH, self.HEIGHT)  # Perbaikan penutup kurung
-        
-        # Scale light image sesuai zoom awal
-        self.scaled_light = pygame.transform.scale(
-            self.light_img,
-            (int(self.light_img.get_width() * self.zoom), 
-            int(self.light_img.get_height() * self.zoom))  # Perbaikan sintaks tuple
-        )
-        
+        self.background, self.platform_img, self.wall_img = load_assets(self.WIDTH, self.HEIGHT)
+
         # Game objects
         self.player = Player(
             50, self.HEIGHT - 100, 50, 50,
-            pygame.image.load("assets/player.png").convert_alpha()
+            pygame.image.load("assets/image/player.png").convert_alpha()
+        )
+
+        self.enemy = Enemy(
+            300, self.HEIGHT - 150, 50, 50, pygame.image.load("assets/image/enemy.png").convert_alpha()
         )
 
         self.platforms = create_platforms(self.WIDTH, self.HEIGHT, self.platform_img, self.wall_img)
         self.camera = Camera(int(self.WIDTH / self.zoom), int(self.HEIGHT / self.zoom), self.zoom)
 
+        # Light animation
+        self.light_angle = 0
+
+        # Initialize health
+        self.health = 3  # Initialize player's health
+
+    def update_enemy(self):
+        damage = self.enemy.update(self.player.rect)
+        if damage > 0:
+            self.player.take_damage(damage)  # Pemain terkena serangan musuh
+            self.health -= damage  # Kurangi health pemain ketika terkena serangan musuh
+
     def handle_input(self):
         keys = pygame.key.get_pressed()
         original_x = self.player.rect.x
-        
+
         if keys[pygame.K_LEFT]:
             self.player.move(dx=-self.player.speed)
         if keys[pygame.K_RIGHT]:
@@ -49,16 +61,13 @@ class Game:
         self.check_horizontal_collisions(original_x)
 
     def check_horizontal_collisions(self, original_x):
-        collided = False
         for platform in self.platforms:
             if self.player.rect.colliderect(platform.rect):
                 if self.player.rect.x < original_x:
                     self.player.rect.left = platform.rect.right
                 else:
                     self.player.rect.right = platform.rect.left
-                collided = True
-        return collided
-    
+
     def check_vertical_collisions(self):
         self.player.on_ground = False
         for platform in self.platforms:
@@ -79,12 +88,10 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                
-                # Handle mouse click
+
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event.pos
                     if self.state == "menu":
-                        # Cek klik tombol menu
                         play_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
                         exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
                         if play_rect.collidepoint(mouse_pos):
@@ -92,67 +99,68 @@ class Game:
                         elif exit_rect.collidepoint(mouse_pos):
                             running = False
                     elif self.state == "paused":
-                        # Cek klik tombol pause
                         resume_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
                         exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
                         if resume_rect.collidepoint(mouse_pos):
                             self.state = "playing"
                         elif exit_rect.collidepoint(mouse_pos):
                             running = False
-                
-                # Handle tombol pause
+
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_p:
-                        if self.state == "playing":
-                            self.state = "paused"
-                        elif self.state == "paused":
-                            self.state = "playing"
+                        self.state = "paused" if self.state == "playing" else "playing"
 
-            # Update game state
             if self.state == "playing":
                 self.handle_input()
                 self.player.apply_gravity()
                 self.check_vertical_collisions()
                 self.camera.update(self.player, self.WIDTH, self.HEIGHT)
+                self.update_enemy()  # Update enemy behavior
 
-            # Rendering
             if self.state == "menu":
-                # Draw menu
                 self.screen.blit(self.background, (0, 0))
-                # Tombol
                 play_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
                 exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
                 pygame.draw.rect(self.screen, (0, 200, 0), play_rect)
                 pygame.draw.rect(self.screen, (200, 0, 0), exit_rect)
-                # Text
                 text_play = self.font.render("Play", True, (255,255,255))
                 text_exit = self.font.render("Exit", True, (255,255,255))
                 self.screen.blit(text_play, (play_rect.x+70, play_rect.y+15))
                 self.screen.blit(text_exit, (exit_rect.x+70, exit_rect.y+15))
-            
+
             elif self.state in ("playing", "paused"):
-                # Draw game
                 draw_background(self.screen, self.background, self.camera.rect, self.WIDTH, self.HEIGHT)
-                draw_objects(self.screen, self.player, self.platforms, self.camera.rect, self.zoom, self.light_img)
-                
+                draw_objects(self.screen, self.player, self.platforms, self.camera.rect, self.zoom)
+
+                # Update radius cahaya
+                self.light_angle += 0.05
+                pulse = math.sin(self.light_angle) * 8  # denyut
+                light_radius = int(120 + pulse)
+
+                draw_darkness_with_light(self.screen, self.player, self.camera.rect, self.zoom, light_radius)
+
+                # Draw enemy
+                self.enemy.draw(self.screen, self.camera.rect, self.zoom)
+
                 if self.state == "paused":
-                    # Overlay gelap
                     overlay = pygame.Surface((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
                     overlay.fill((0, 0, 0, 128))
                     self.screen.blit(overlay, (0, 0))
-                    # Tombol
                     resume_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
                     exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
                     pygame.draw.rect(self.screen, (0, 200, 0), resume_rect)
                     pygame.draw.rect(self.screen, (200, 0, 0), exit_rect)
-                    # Text
                     text_resume = self.font.render("Resume", True, (255,255,255))
                     text_exit_pause = self.font.render("Exit", True, (255,255,255))
                     self.screen.blit(text_resume, (resume_rect.x+50, resume_rect.y+15))
                     self.screen.blit(text_exit_pause, (exit_rect.x+70, exit_rect.y+15))
 
+            # Draw player's health on screen
+            health_text = self.font.render(f"Health: {self.health}", True, (255, 0, 0))
+            self.screen.blit(health_text, (10, 10))
+
             pygame.display.flip()
             self.clock.tick(self.FPS)
-        
+
         pygame.quit()
         sys.exit()
