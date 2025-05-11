@@ -11,11 +11,22 @@ class Camera:
         self.rect.y = max(0, min(self.rect.y, world_height - self.rect.height))
 
 def load_assets(width, height):
+    # Load background
     background = pygame.image.load("assets/image/bg.png").convert()
     background = pygame.transform.scale(background, (width, height))
+    
+    # Load platform assets
     platform_img = pygame.image.load("assets/image/tile_1.png").convert_alpha()
     wall_img = pygame.image.load("assets/image/wall.png").convert_alpha()
-    return background, platform_img, wall_img
+    
+    # Load button images
+    start_button_img = pygame.image.load("assets/image/start_button.png").convert_alpha()
+    start_button_img = pygame.transform.scale(start_button_img, (200, 50))  # Sesuaikan ukuran
+    
+    exit_button_img = pygame.image.load("assets/image/start_button.png").convert_alpha()
+    exit_button_img = pygame.transform.scale(start_button_img, (200, 50))  # Ukuran sama dengan tombol start
+    
+    return background, platform_img, wall_img, start_button_img, exit_button_img
 
 def draw_background(screen, background, camera_rect, screen_width, screen_height):
     bg_sub = background.subsurface(camera_rect)
