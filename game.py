@@ -1,6 +1,7 @@
 import pygame
 import sys
 import math
+from npc import create_npcs
 from character import Player  # Mengimpor Player dari character.py
 from enemy import Enemy
 from gameobject import Platform, create_platforms
@@ -21,12 +22,15 @@ class Game:
         self.jump_requested = False  
         self.player = None  # Tambahkan deklarasi awal
 
-            # Load semua assets dan simpan sebagai atribut instance
+        # Load semua assets dan simpan sebagai atribut instance
         (self.background, 
          self.platform_img, 
          self.wall_img, 
          self.start_button_img, 
          self.exit_button_img) = load_assets(self.WIDTH, self.HEIGHT)
+        
+        self.npcs = create_npcs()
+
         # Load enemy images
         self.enemy_images = {
             'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
@@ -46,7 +50,7 @@ class Game:
         self.enemy = Enemy(
             300, self.HEIGHT - 150, 50, 50,
             self.enemy_images,  # PAKAI self.enemy_images
-            attack_range=80, 
+            attack_range=20, 
             damage=1
         )
 
