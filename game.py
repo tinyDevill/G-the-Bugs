@@ -19,43 +19,71 @@ class Game:
         self.state = "menu"
         self.font = pygame.font.Font(None, 36)
         self.jump_requested = False  
+        self.player = None  # Tambahkan deklarasi awal
 
-        # Load assets
-        self.background, self.platform_img, self.wall_img, self.start_button_img, self.exit_button_img = load_assets(self.WIDTH, self.HEIGHT)
+            # Load semua assets dan simpan sebagai atribut instance
+        (self.background, 
+         self.platform_img, 
+         self.wall_img, 
+         self.start_button_img, 
+         self.exit_button_img) = load_assets(self.WIDTH, self.HEIGHT)
+        # Load enemy images
+        self.enemy_images = {
+            'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
+            'walk1': pygame.image.load("assets/image/enemy_walk1.png").convert_alpha(),
+            'walk2': pygame.image.load("assets/image/enemy_walk2.png").convert_alpha(),
+            'attack1': pygame.image.load("assets/image/enemy_attack1.png").convert_alpha(),
+            'attack2': pygame.image.load("assets/image/enemy_attack2.png").convert_alpha(),
+            'attack3': pygame.image.load("assets/image/enemy_attack3.png").convert_alpha()
+        }
 
-        # Game objects
+        self.reset_game()  # Akan menginisialisasi health melalui reset_game()
+    def reset_game(self):
+                
         self.player = Player(
-            50, self.HEIGHT - 100, 50, 50,
-            pygame.image.load("assets/image/player.png").convert_alpha()
+            50, self.HEIGHT - 100, 50, 50
         )
-
         self.enemy = Enemy(
-            300, self.HEIGHT - 150, 50, 50, pygame.image.load("assets/image/enemy.png").convert_alpha()
+            300, self.HEIGHT - 150, 50, 50,
+            self.enemy_images,  # PAKAI self.enemy_images
+            attack_range=80, 
+            damage=1
         )
 
         self.platforms = create_platforms(self.WIDTH, self.HEIGHT, self.platform_img, self.wall_img)
         self.camera = Camera(int(self.WIDTH / self.zoom), int(self.HEIGHT / self.zoom), self.zoom)
-
-        # Light animation
         self.light_angle = 0
 
-        # Initialize health
-        self.health = 3  # Initialize player's health
-
     def update_enemy(self):
-        damage = self.enemy.update(self.player.rect)
+        if self.enemy is None or not self.player.alive:
+            return 
+        
+        dt = self.clock.get_time() / 1000  
+        damage = self.enemy.update(dt, self.player.rect, self.platforms)
+
+        if self.enemy.health <= 0:
+            self.enemy = None  # Hapus enemy dari game        
+
         if damage > 0:
-            self.player.take_damage(damage)  # Pemain terkena serangan musuh
-            self.health -= damage  # Kurangi health pemain ketika terkena serangan musuh
+            self.player.take_damage(damage)
+            if self.player.health <= 0:  # CEK HEALTH PLAYER LANGSUNG
+                self.state = "menu"
+                self.reset_game()
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
         original_x = self.player.rect.x
 
-        if keys[pygame.K_LEFT]:
-            self.player.move(dx=-self.player.speed)
-        if keys[pygame.K_RIGHT]:
-            self.player.move(dx=self.player.speed)
+        # Gerakan kiri/kanan
+        if not self.player.is_attacking:  # Hanya bisa bergerak jika tidak sedang menyerang
+            if keys[pygame.K_LEFT]:
+                self.player.move(dx=-self.player.speed)
+            if keys[pygame.K_RIGHT]:
+                self.player.move(dx=self.player.speed)
+
+        # Input serangan (contoh: tombol Z)
+        if keys[pygame.K_z]:
+            self.player.attack()
 
         self.check_horizontal_collisions(original_x)
 
@@ -83,10 +111,14 @@ class Game:
                     self.player.rect.top = platform.rect.bottom
                     self.player.velocity_y = 0
         return collided
+    
 
     def run(self):
         running = True
         while running:
+
+
+            dt = self.clock.tick(self.FPS) / 1000  # Delta time dalam detik
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -105,22 +137,26 @@ class Game:
                         exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
                         if resume_rect.collidepoint(mouse_pos):
                             self.state = "playing"
+                            self.reset_game()  # Reset game state
                         elif exit_rect.collidepoint(mouse_pos):
                             running = False
 
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_p:
+                    if event.key == pygame.K_ESCAPE:
                         self.state = "paused" if self.state == "playing" else "playing"
                 # Pengecekan SPACE di sini (hanya trigger saat ditekan)
                     if event.key == pygame.K_SPACE and self.state == "playing":
                         self.jump_requested = True                    
 
             if self.state == "playing":
+                dt = self.clock.get_time()
+                self.player.update(dt)
                 self.handle_input()
                 self.player.apply_gravity()
                 self.check_vertical_collisions()
                 self.camera.update(self.player, self.WIDTH, self.HEIGHT)
                 self.update_enemy()  # Update enemy behavior
+                self.enemy.update(dt, self.player.rect, self.platforms)
                 if self.jump_requested:
                     if self.player.on_ground:
                         self.player.jump()
@@ -156,7 +192,9 @@ class Game:
                 draw_darkness_with_light(self.screen, self.player, self.camera.rect, self.zoom, light_radius)
 
                 # Draw enemy
-                self.enemy.draw(self.screen, self.camera.rect, self.zoom)
+                if self.enemy and self.enemy.alive:  # Hanya gambar jika enemy ada dan hidup
+                    self.enemy.draw(self.screen, self.camera.rect, self.zoom)
+                
 
                 if self.state == "paused":
                     overlay = pygame.Surface((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
@@ -172,7 +210,7 @@ class Game:
                     self.screen.blit(text_exit_pause, (exit_rect.x+70, exit_rect.y+15))
 
             # Draw player's health on screen
-            health_text = self.font.render(f"Health: {self.health}", True, (255, 0, 0))
+            health_text = self.font.render(f"Health: {self.player.health}", True, (255, 0, 0))
             self.screen.blit(health_text, (10, 10))
 
             pygame.display.flip()
