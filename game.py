@@ -66,7 +66,9 @@ class Game:
         damage = self.enemy.update(dt, self.player.rect, self.platforms)
 
         if self.enemy.health <= 0:
-            self.enemy = None  # Hapus enemy dari game        
+            print("Enemy defeated!")  # Debug print
+            self.enemy = None  # Hapus enemy dari game
+            return  # Keluar dari fungsi setelah enemy mati
 
         if damage > 0:
             self.player.take_damage(damage)
@@ -154,13 +156,14 @@ class Game:
 
             if self.state == "playing":
                 dt = self.clock.get_time()
-                self.player.update(dt)
+                self.player.update(dt, self.enemy)  # Teruskan enemy ke update player
                 self.handle_input()
                 self.player.apply_gravity()
                 self.check_vertical_collisions()
                 self.camera.update(self.player, self.WIDTH, self.HEIGHT)
                 self.update_enemy()  # Update enemy behavior
-                self.enemy.update(dt, self.player.rect, self.platforms)
+                if self.enemy:  # Hanya update enemy jika masih ada
+                    self.enemy.update(dt, self.player.rect, self.platforms)
                 if self.jump_requested:
                     if self.player.on_ground:
                         self.player.jump()
