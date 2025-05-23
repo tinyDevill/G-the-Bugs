@@ -1,32 +1,232 @@
 import pygame
+import sys
+import math
+from npc import create_npcs
+from character import Player  
+from enemy import Enemy
+from gameobject import Platform, create_platforms
+from screen import load_assets, Camera, draw_background, draw_objects, draw_darkness_with_light
 
-class GameObject:
-    def __init__(self, x, y, width, height):
-        self.rect = pygame.Rect(x, y, width, height)
+class Game:
+    def __init__(self):
+        pygame.init()
+        self.WIDTH, self.HEIGHT = 1200, 600
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("G The Bugs Draft")
+
+        self.clock = pygame.time.Clock()
+        self.FPS = 45
+        self.zoom = 1.4
+        self.state = "menu"
+        self.font = pygame.font.Font(None, 36)
+        self.jump_requested = False  
+        self.player = None  # Tambahkan deklarasi awal
+
+        # Load semua assets dan simpan sebagai atribut instance
+        (self.background,
+         self.floor1_img,
+         self.floor2_img, 
+         self.platform_img,
+         self.benchbottom_img,
+         self.benchside2_1_img,
+         self.benchside2_2_img, 
+         self.wall_img, 
+         self.start_button_img, 
+         self.exit_button_img) = load_assets(self.WIDTH, self.HEIGHT)
         
-    def draw(self, screen, camera_rect, zoom):
-        pass  # Akan dioverride oleh subclass
+        self.npcs = create_npcs()
 
-class Platform(GameObject):
-    def __init__(self, x, y, width, height, image, is_wall=False):
-        super().__init__(x, y, width, height)
-        self.image = image
-        self.is_wall = is_wall
+        # Load enemy images
+        self.enemy_images = {
+            'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
+            'walk1': pygame.image.load("assets/image/enemy_walk1.png").convert_alpha(),
+            'walk2': pygame.image.load("assets/image/enemy_walk2.png").convert_alpha(),
+            'attack1': pygame.image.load("assets/image/enemy_attack1.png").convert_alpha(),
+            'attack2': pygame.image.load("assets/image/enemy_attack2.png").convert_alpha(),
+            'attack3': pygame.image.load("assets/image/enemy_attack3.png").convert_alpha()
+        }
 
-    def draw(self, screen, camera_rect, zoom):
-        screen_x = int((self.rect.x - camera_rect.x) * zoom)
-        screen_y = int((self.rect.y - camera_rect.y) * zoom)
-        scaled_img = pygame.transform.scale(
-            self.image, 
-            (int(self.rect.width * zoom), int(self.rect.height * zoom))
+        self.reset_game()  # Akan menginisialisasi health melalui reset_game()
+    def reset_game(self):
+                
+        self.player = Player(
+            50, self.HEIGHT - 300, 50, 50
         )
-        screen.blit(scaled_img, (screen_x, screen_y))
+        self.enemy = Enemy(
+            300, self.HEIGHT - 150, 50, 50,
+            self.enemy_images,  # PAKAI self.enemy_images
+            attack_range=20, 
+            damage=1
+        )
 
-def create_platforms(screen_width, screen_height, platform_img, wall_img):
-    return [
-        Platform(0, screen_height-50, screen_width, 50, platform_img),
-        Platform(200, 450, 150, 20, platform_img),
-        Platform(400, 400, 150, 20, platform_img),
-        Platform(0, 0, 10, screen_height, wall_img, is_wall=True),
-        Platform(screen_width-10, 0, 10, screen_height, wall_img, is_wall=True)
-    ]
+        self.platforms = create_platforms(self.WIDTH, self.HEIGHT,self.floor1_img,self.floor2_img, self.platform_img,self.benchbottom_img,self.benchside2_1_img,self.benchside2_2_img, self.wall_img)
+        self.camera = Camera(int(self.WIDTH / self.zoom), int(self.HEIGHT / self.zoom), self.zoom)
+        self.light_angle = 0
+
+    def update_enemy(self):
+        if self.enemy is None or not self.player.alive:
+            return 
+        
+        dt = self.clock.get_time() / 1000  
+        damage = self.enemy.update(dt, self.player.rect, self.platforms)
+
+        if self.enemy.health <= 0:
+            print("Enemy defeated!")  # Debug print
+            self.enemy = None  # Hapus enemy dari game
+            return  # Keluar dari fungsi setelah enemy mati
+
+        if damage > 0:
+            self.player.take_damage(damage)
+            if self.player.health <= 0:  # CEK HEALTH PLAYER LANGSUNG
+                self.state = "menu"
+                self.reset_game()
+
+    def handle_input(self):
+        keys = pygame.key.get_pressed()
+        original_x = self.player.rect.x
+
+        # Gerakan kiri/kanan
+        if not self.player.is_attacking:  # Hanya bisa bergerak jika tidak sedang menyerang
+            if keys[pygame.K_LEFT]:
+                self.player.move(dx=-self.player.speed)
+            if keys[pygame.K_RIGHT]:
+                self.player.move(dx=self.player.speed)
+
+        # Input serangan (contoh: tombol Z)
+        if keys[pygame.K_z]:
+            self.player.attack()
+
+        self.check_horizontal_collisions(original_x)
+
+    def check_horizontal_collisions(self, original_x):
+        for platform in self.platforms:
+            if self.player.rect.colliderect(platform.rect):
+                if self.player.rect.x < original_x:
+                    self.player.rect.left = platform.rect.right
+                else:
+                    self.player.rect.right = platform.rect.left
+
+    def check_vertical_collisions(self):
+        self.player.on_ground = False
+        collided = False
+        for platform in self.platforms:
+            if platform.is_wall:  # Skip tembok untuk tabrakan vertikal
+                continue
+            if self.player.rect.colliderect(platform.rect):
+                collided = True
+                if self.player.velocity_y > 0:
+                    self.player.rect.bottom = platform.rect.top
+                    self.player.velocity_y = 0
+                    self.player.on_ground = True
+                elif self.player.velocity_y < 0:
+                    self.player.rect.top = platform.rect.bottom
+                    self.player.velocity_y = 0
+        return collided
+    
+
+    def run(self):
+        running = True
+        while running:
+
+
+            dt = self.clock.tick(self.FPS) / 1000  # Delta time dalam detik
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event.pos
+                    if self.state == "menu":
+                        play_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
+                        exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
+                        if play_rect.collidepoint(mouse_pos):
+                            self.state = "playing"
+                        elif exit_rect.collidepoint(mouse_pos):
+                            running = False
+                    elif self.state == "paused":
+                        resume_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
+                        exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
+                        if resume_rect.collidepoint(mouse_pos):
+                            self.state = "playing"
+                            self.reset_game()  # Reset game state
+                        elif exit_rect.collidepoint(mouse_pos):
+                            running = False
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.state = "paused" if self.state == "playing" else "playing"
+                # Pengecekan SPACE di sini (hanya trigger saat ditekan)
+                    if event.key == pygame.K_SPACE and self.state == "playing":
+                        self.jump_requested = True                    
+
+            if self.state == "playing":
+                dt = self.clock.get_time()
+                self.player.update(dt, self.enemy)  # Teruskan enemy ke update player
+                self.handle_input()
+                self.player.apply_gravity()
+                self.check_vertical_collisions()
+                self.camera.update(self.player, self.WIDTH, self.HEIGHT)
+                self.update_enemy()  # Update enemy behavior
+                if self.enemy:  # Hanya update enemy jika masih ada
+                    self.enemy.update(dt, self.player.rect, self.platforms)
+                if self.jump_requested:
+                    if self.player.on_ground:
+                        self.player.jump()
+                    self.jump_requested = False
+
+            if self.state == "menu":
+                self.screen.blit(self.background, (0, 0))
+                play_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
+                exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
+                # Draw transparent rectangles for menu buttons
+                play_overlay = pygame.Surface((play_rect.width, play_rect.height), pygame.SRCALPHA)
+                play_overlay.fill((0, 0, 0, 0))  # 100 = alpha for transparency
+                self.screen.blit(play_overlay, play_rect.topleft)
+
+                exit_overlay = pygame.Surface((exit_rect.width, exit_rect.height), pygame.SRCALPHA)
+                exit_overlay.fill((0, 0, 0, 0))
+                self.screen.blit(exit_overlay, exit_rect.topleft)
+                # Center the images in the rects
+                play_img_rect = self.start_button_img.get_rect(center=play_rect.center)
+                exit_img_rect = self.exit_button_img.get_rect(center=exit_rect.center)
+                self.screen.blit(self.start_button_img, play_img_rect.topleft)
+                self.screen.blit(self.exit_button_img, exit_img_rect.topleft)
+
+            elif self.state in ("playing", "paused"):
+                draw_background(self.screen, self.background, self.camera.rect, self.WIDTH, self.HEIGHT)
+                draw_objects(self.screen, self.player, self.platforms, self.camera.rect, self.zoom)
+
+                # Update radius cahaya
+                self.light_angle += 0.05
+                pulse = math.sin(self.light_angle) * 8  # denyut
+                light_radius = int(120 + pulse)
+
+                draw_darkness_with_light(self.screen, self.player, self.camera.rect, self.zoom, light_radius)
+
+                # Draw enemy
+                if self.enemy and self.enemy.alive:  # Hanya gambar jika enemy ada dan hidup
+                    self.enemy.draw(self.screen, self.camera.rect, self.zoom)
+                
+
+                if self.state == "paused":
+                    overlay = pygame.Surface((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
+                    overlay.fill((0, 0, 0, 128))
+                    self.screen.blit(overlay, (0, 0))
+                    resume_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2-40, 200, 50)
+                    exit_rect = pygame.Rect(self.WIDTH//2-100, self.HEIGHT//2+40, 200, 50)
+                    pygame.draw.rect(self.screen, (0, 200, 0), resume_rect)
+                    pygame.draw.rect(self.screen, (200, 0, 0), exit_rect)
+                    text_resume = self.font.render("Resume", True, (255,255,255))
+                    text_exit_pause = self.font.render("Exit", True, (255,255,255))
+                    self.screen.blit(text_resume, (resume_rect.x+50, resume_rect.y+15))
+                    self.screen.blit(text_exit_pause, (exit_rect.x+70, exit_rect.y+15))
+
+            # Draw player's health on screen
+            health_text = self.font.render(f"Health: {self.player.health}", True, (255, 0, 0))
+            self.screen.blit(health_text, (10, 10))
+
+            pygame.display.flip()
+            self.clock.tick(self.FPS)
+
+        pygame.quit()
+        sys.exit()
