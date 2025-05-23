@@ -10,7 +10,7 @@ class Enemy(GameObject):
         self.attack_range = attack_range  # Tambahkan ini
         self.damage = damage  # Tambahkan ini
         self.direction = 1
-        self.health = 3
+        self.health = 1
         self.is_attacking = False
         self.facing = "left"
         self.current_animation = None
@@ -29,11 +29,14 @@ class Enemy(GameObject):
         self.attack_anim = Animation([images['attack1'], images['attack2'], images['attack3']], 50, loop=False)
 
     def take_damage(self, damage):
+        print(f"Enemy taking damage: {damage}")  # Debug print
         self.health -= damage
+        print(f"Enemy health after damage: {self.health}")  # Debug print
         if self.health <= 0:
             self.die()
 
     def die(self):
+        print("Enemy is dying!")  # Debug print
         self.alive = False
         print("Enemy died")
        
