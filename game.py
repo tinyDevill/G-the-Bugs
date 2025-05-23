@@ -2,7 +2,7 @@ import pygame
 import sys
 import math
 from npc import create_npcs
-from character import Player  # Mengimpor Player dari character.py
+from character import Player  
 from enemy import Enemy
 from gameobject import Platform, create_platforms
 from screen import load_assets, Camera, draw_background, draw_objects, draw_darkness_with_light
@@ -10,21 +10,26 @@ from screen import load_assets, Camera, draw_background, draw_objects, draw_dark
 class Game:
     def __init__(self):
         pygame.init()
-        self.WIDTH, self.HEIGHT = 800, 600
+        self.WIDTH, self.HEIGHT = 1200, 600
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("G The Bugs Draft")
 
         self.clock = pygame.time.Clock()
         self.FPS = 45
-        self.zoom = 1.5
+        self.zoom = 1.4
         self.state = "menu"
         self.font = pygame.font.Font(None, 36)
         self.jump_requested = False  
         self.player = None  # Tambahkan deklarasi awal
 
         # Load semua assets dan simpan sebagai atribut instance
-        (self.background, 
-         self.platform_img, 
+        (self.background,
+         self.floor1_img,
+         self.floor2_img, 
+         self.platform_img,
+         self.benchbottom_img,
+         self.benchside2_1_img,
+         self.benchside2_2_img, 
          self.wall_img, 
          self.start_button_img, 
          self.exit_button_img) = load_assets(self.WIDTH, self.HEIGHT)
@@ -45,7 +50,7 @@ class Game:
     def reset_game(self):
                 
         self.player = Player(
-            50, self.HEIGHT - 100, 50, 50
+            50, self.HEIGHT - 300, 50, 50
         )
         self.enemy = Enemy(
             300, self.HEIGHT - 150, 50, 50,
@@ -54,7 +59,7 @@ class Game:
             damage=1
         )
 
-        self.platforms = create_platforms(self.WIDTH, self.HEIGHT, self.platform_img, self.wall_img)
+        self.platforms = create_platforms(self.WIDTH, self.HEIGHT,self.floor1_img,self.floor2_img, self.platform_img,self.benchbottom_img,self.benchside2_1_img,self.benchside2_2_img, self.wall_img)
         self.camera = Camera(int(self.WIDTH / self.zoom), int(self.HEIGHT / self.zoom), self.zoom)
         self.light_angle = 0
 
