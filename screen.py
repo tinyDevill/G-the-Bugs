@@ -14,12 +14,17 @@ class Camera:
 
 def load_assets(width, height):
     # Load background
-    background = pygame.image.load("assets/image/bg.png").convert()
+    background = pygame.image.load("assets/image/platform/pl2/bg2.png").convert()
     background = pygame.transform.scale(background, (width, height))
     
     # Load platform assets
-    platform_img = pygame.image.load("assets/image/tile_1.png").convert_alpha()
-    wall_img = pygame.image.load("assets/image/wall.png").convert_alpha()
+    floor1_img = pygame.image.load("assets/image/platform/pl2/floor2_2.png").convert_alpha()
+    floor2_img = pygame.image.load("assets/image/platform/pl2/floor2_1.png").convert_alpha()
+    platform_img = pygame.image.load("assets/image/platform/pl2/platform2.png").convert_alpha()
+    benchbottom_img = pygame.image.load("assets/image/platform/pl2/benchbottom.png").convert_alpha()
+    benchside2_1_img = pygame.image.load("assets/image/platform/pl2/benchside2_1.png").convert_alpha()
+    benchside2_2_img = pygame.image.load("assets/image/platform/pl2/benchside2_2.png").convert_alpha()
+    wall_img = pygame.image.load("assets/image/platform/pl2/wall2_1.png").convert_alpha()
     
     # Load button images
     start_button_img = pygame.image.load("assets/image/start_button.png").convert_alpha()
@@ -28,7 +33,7 @@ def load_assets(width, height):
     exit_button_img = pygame.image.load("assets/image/exit_button.png").convert_alpha()
     exit_button_img = pygame.transform.scale(exit_button_img, (200, 100))  # Ukuran sama dengan tombol start
     
-    return background, platform_img, wall_img, start_button_img, exit_button_img
+    return background,floor1_img,floor2_img, platform_img,benchbottom_img,benchside2_1_img,benchside2_2_img, wall_img, start_button_img, exit_button_img
 
 def draw_background(screen, background, camera_rect, screen_width, screen_height):
     bg_sub = background.subsurface(camera_rect)
