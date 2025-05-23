@@ -60,13 +60,32 @@ class Player:
             self.is_attacking = True
             self.attack_anim.current_frame = 0
             self.attack_anim.done = False
-            self.attack_cooldown = 30  # Cooldown 30 frame
+            self.attack_cooldown = 10  # Cooldown 30 frame
 
-    def update(self, dt):
+    def get_attack_rect(self):
+        if not self.is_attacking:
+            return None
+            
+        attack_rect = pygame.Rect(0, 0, 50, 30)  # Area serangan
+        if self.facing == "right":
+            attack_rect.midleft = self.rect.midright
+        else:
+            attack_rect.midright = self.rect.midleft
+        return attack_rect
+
+    def update(self, dt, enemy=None):
         # Update animasi
         if self.is_attacking:
             self.current_animation = self.attack_anim
             self.attack_anim.update(dt)
+            
+            # Cek tabrakan dengan enemy saat menyerang
+            if enemy and enemy.alive:
+                attack_rect = self.get_attack_rect()
+                if attack_rect and attack_rect.colliderect(enemy.rect):
+                    enemy.take_damage(1)
+                    print(f"Enemy health: {enemy.health}")  # Debug print
+            
             if self.attack_anim.done:
                 self.is_attacking = False
         elif self.velocity_y != 0 or not self.on_ground:
