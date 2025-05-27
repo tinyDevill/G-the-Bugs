@@ -9,8 +9,11 @@ truth_seeker_dialogs = {
     "has_heart": ["Ah, the void heart! Give it here... quickly!"],
     "outro": ["It is done... the path is clear... but at what cost?"]
 }
-steelsoul_dialogs = {"default": ["Ho there, traveler! This cave is treacherous.", "Watch your step."]}
-noze_dialogs = {"default": ["Mhehehe... shiny things? Got any for Noze?"]}
+steelsoul_dialogs = {"default": ["hey, whatchu doing here?", "wow, you have a cool sword?", "so, you just walking and slay that empty life corpse, right?","they once life. doing their job and so cheerful. but, after that black goo arrived from nowhere. i wonder, where it come from?"],
+                     "dialog2": ["this area is full of silent. but, i like it.", "this is so peacefully."]
+}
+noze_dialogs = {"default": ["oh. you're so tiny, mwehehehe..."],
+                "dialog2": ["i have a lot of things to sell, mwehehehe...", "you want to buy something?"]}
 lost_knight_dialogs = {"default": ["Lost... so lost... was there ever a purpose?"]}
 # ... other dialogs
 
