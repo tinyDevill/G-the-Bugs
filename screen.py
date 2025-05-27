@@ -54,11 +54,11 @@ def load_assets(screen_width_for_scaling, screen_height_for_scaling): # Paramete
         # Load other assets and add them to the dictionary
         assets['steelsoul_img'] = pygame.image.load("assets/image/steelsoul.png").convert_alpha()
         assets['noze_img'] = pygame.image.load("assets/image/noze.png").convert_alpha()
+        cave_bg_temp = pygame.image.load("assets/image/platform/pl3/bg3.png").convert()
+        assets['cave_bg'] = pygame.transform.scale(cave_bg_temp, (1600, screen_height_for_scaling)) # Example scale
         # Make sure to create these placeholder images or your actual assets
         # assets['lost_knight_img'] = pygame.image.load("assets/image/lost_knight.png").convert_alpha() 
         
-        cave_bg_temp = pygame.image.load("assets/image/platform/pl3/bg3.png").convert()
-        assets['cave_bg'] = pygame.transform.scale(cave_bg_temp, (1600, screen_height_for_scaling)) # Example scale
 
     except pygame.error as e:
         print(f"Error loading an asset in screen.py: {e}")
