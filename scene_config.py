@@ -38,8 +38,8 @@ SCENES_DATA = [
             }
         ],
         'enemy_definitions': [
-            {'x': 800, 'y': (GAME_HEIGHT - 200 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}, # Adjusted y to be on the floor (400-60)
-            {'x': 600, 'y': (GAME_HEIGHT - 200 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}  # Adjusted y to be on the floor (400-60)
+            {'x': 890, 'y': (GAME_HEIGHT - 200 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}, # Adjusted y to be on the floor (400-60)
+            {'x': 590, 'y': (GAME_HEIGHT - 200 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}  # Adjusted y to be on the floor (400-60)
         ],
         'transitions': [
             {
@@ -71,8 +71,8 @@ SCENES_DATA = [
             },
         ],
         'enemy_definitions': [
-            {'x': 400, 'y': GAME_HEIGHT - 70 - 60, 'width': 60, 'height': 60, 'type': 'cave_enemy_1'},
-            {'x': 800, 'y': GAME_HEIGHT - 70 - 60, 'width': 60, 'height': 60, 'type': 'cave_enemy_2'}
+            {'x': 610, 'y': 400, 'width': 60, 'height': 60, 'type': 'cave_enemy_1'},
+            {'x': 910, 'y': 350, 'width': 60, 'height': 60, 'type': 'cave_enemy_2'}
         ],
         'transitions': [
             {
