@@ -32,24 +32,24 @@ SCENES_DATA = [
             {
                 'name': 'truth_seeker', 'x': 300, 'y': GAME_HEIGHT - 200 - 70, # y is top
                 'width': 50, 'height': 70, 'image_key': 'truth_seeker',
-                # 'initial_dialog_key': 'intro' # NPC decides its dialog based on game story_flags
-                # Define what happens after interacting with this NPC in this scene
-                'on_interaction_end': { # Optional: actions after any dialog sequence with this NPC ends
-                    'set_story_flag': 'truth_seeker_initial_talk_done', # Example: Game sets this flag
-                    # 'next_scene_if_flag_is_also_set': {'flag':'some_other_flag', 'scene_id': SCENE_ID_CAVE_PATH_ENTRY}
+                'on_interaction_end': {
+                    'set_story_flag': 'truth_seeker_initial_talk_done',
                 }
             }
         ],
         'enemy_definitions': [
-            {'x': 800, 'y': (400 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}
+            {'x': 800, 'y': (GAME_HEIGHT - 200 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}, # Adjusted y to be on the floor (400-60)
+            {'x': 600, 'y': (GAME_HEIGHT - 200 - 60), 'width': 60, 'height': 60, 'type': 'default_enemy'}  # Adjusted y to be on the floor (400-60)
         ],
-        'transitions': [ # How to exit this scene
+        'transitions': [
             {
-                'type': 'player_at_location_and_flag',
-                'rect_coords': (GAME_WIDTH - 50, GAME_HEIGHT - 100, 40, 80), # x,y,w,h for exit zone
-                'required_story_flag': 'truth_seeker_quest_accepted', # Can only exit if this flag is true
-                'target_scene_id': SCENE_ID_CAVE_PATH_ENTRY
+                'type': 'player_at_location_and_flag', # We'll check an additional condition in game.py
+                'rect_coords': (GAME_WIDTH - 50, GAME_HEIGHT - 100, 40, 80), # This is (1150, 500, 40, 80)
+                'required_story_flag': 'truth_seeker_initial_talk_done', # Condition: Player interacted with NPC
+                'must_all_enemies_be_slain': True, # New Condition: All enemies must be slain
+                'target_scene_id': SCENE_ID_CAVE_PATH_ENTRY # The scene to change to
             }
+            # You might have other transitions here, e.g., one that doesn't require enemies slain but different flags
         ]
     },
     {
@@ -68,12 +68,7 @@ SCENES_DATA = [
             {
                 'name': 'steelsoul', 'x': 700, 'y': GAME_HEIGHT - 70 - 70,
                 'width': 50, 'height': 70, 'image_key': 'steelsoul',
-                # This NPC might react to flags set by Truth Seeker, or have its own simple dialog.
             },
-            # Example: Noze appears only if a certain flag is set
-            # This conditional appearance is handled in Game.load_scene by checking story_flags
-            # before deciding to instantiate an NPC from npc_definitions.
-            # Alternatively, npc_definitions itself could have a 'required_flag_to_appear'.
         ],
         'enemy_definitions': [
             {'x': 400, 'y': GAME_HEIGHT - 70 - 60, 'width': 60, 'height': 60, 'type': 'cave_enemy_1'},
@@ -85,8 +80,6 @@ SCENES_DATA = [
                 'rect_coords': (10, GAME_HEIGHT - 120, 40, 80), # Exit on the left to go back
                 'target_scene_id': SCENE_ID_SHRINE_START
             },
-            # Add more transitions, e.g., deeper into the caves
         ]
     },
-    # Add more scenes...
 ]
