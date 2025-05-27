@@ -7,7 +7,7 @@ class Player:
         self.alive = True
         self.rect = pygame.Rect(x, y, width, height)
         self.speed = 200 # Pixels per second
-        self.jump_power = -15 # Keep as instantaneous velocity change
+        self.jump_power = -13 # Keep as instantaneous velocity change
         self.velocity_y = 0
         self.on_ground = False
         self.health = 3
@@ -46,41 +46,51 @@ class Player:
             self.attack_anim = Animation([placeholder], 1, loop=False)
 
     def move(self, dx_normalized, dt_seconds): # dx_normalized is -1, 0, or 1
-        if not self.is_attacking:
-            actual_dx = dx_normalized * self.speed * dt_seconds
-            self.rect.x += actual_dx
-            if dx_normalized > 0:
-                self.facing = "right"
-                if self.on_ground and not self.is_attacking: self.current_animation = self.walk_anim
-            elif dx_normalized < 0:
-                self.facing = "left"
-                if self.on_ground and not self.is_attacking: self.current_animation = self.walk_anim
-            # If dx_normalized is 0, idle animation will be set in update if on ground
+        """
+        Handles player's horizontal movement based on input.
+        Allows movement even when attacking.
+        Updates player's facing direction.
+        Animation is handled in the update() method.
+        """
+        actual_dx = dx_normalized * self.speed * dt_seconds
+        self.rect.x += actual_dx
+
+        if dx_normalized > 0:
+            self.facing = "right"
+        elif dx_normalized < 0:
+            self.facing = "left"
+        # If dx_normalized is 0, facing remains unchanged.
+        # Animation (idle/walk) will be determined in the update() method based on movement and state.
 
     def jump(self):
         if self.on_ground:
             self.velocity_y = self.jump_power
             self.on_ground = False # Will be corrected by collision if immediately lands
 
-    def apply_gravity(self, gravity_accel=30, max_fall_speed=20): # gravity_accel in units/sec^2
-        # Convert gravity to change per frame: dv = a * dt
+    def apply_gravity(self, gravity_accel=30, max_fall_speed=20):
         self.velocity_y += gravity_accel * (1.0/60.0) # Assuming dt for physics is ~1/60 for now.
-                                                    # Better: pass actual dt_seconds if physics vary
         if self.velocity_y > max_fall_speed:
             self.velocity_y = max_fall_speed
-        self.rect.y += self.velocity_y # Simple Euler integration for position
+        self.rect.y += self.velocity_y
 
     def attack(self):
+        """Initiates an attack if not already attacking and cooldown allows."""
         if not self.is_attacking and self.attack_cooldown_timer <= 0:
             self.is_attacking = True
-            self.current_animation = self.attack_anim
+            self.current_animation = self.attack_anim # Immediately switch to attack animation
             self.attack_anim.reset()
             self.attack_cooldown_timer = self.attack_cooldown_max
 
     def get_attack_rect(self):
-        if not self.is_attacking or self.attack_anim.current_frame_index < 1: # Damage on 2nd+ frame
+        """
+        Returns the hitbox for the attack if the attack is active and on a damaging frame.
+        Returns None otherwise.
+        """
+        # Only return a rect if attacking and on a frame that should deal damage
+        # Example: damage on frame index 1 (second frame) of the attack animation
+        if not self.is_attacking or self.attack_anim.current_frame_index < 1 : # or some other condition like specific frames
             return None
-        # Attack hitbox slightly larger and in front
+
         attack_width = self.rect.width + 20
         attack_height = self.rect.height
         if self.facing == "right":
@@ -88,45 +98,52 @@ class Player:
         else: # facing left
             return pygame.Rect(self.rect.left - attack_width, self.rect.top, attack_width, attack_height)
 
-    def update(self, dt_seconds, enemies_list): # Takes a list of enemies
+    def update(self, dt_seconds, enemies_list):
+        """
+        Updates player state, animations, attack logic, and healing.
+        """
         # Cooldown timer
         if self.attack_cooldown_timer > 0:
             self.attack_cooldown_timer -= dt_seconds
 
-        # Animation and Attack Logic
+        # Attack Logic
         if self.is_attacking:
-            self.current_animation = self.attack_anim # Ensure it's set
+            self.current_animation = self.attack_anim # Ensure attack animation is playing
             self.attack_anim.update(dt_seconds)
             if self.attack_anim.done:
                 self.is_attacking = False
-            # self.current_animation = self.idle_anim # Set based on movement below
+                # Attack finished, animation will be re-evaluated below based on current movement
 
-            # Deal damage
+            # Deal damage during active attack frames
             attack_rect = self.get_attack_rect()
-            if attack_rect: # Check if attack is active and rect is valid
-                # This simple version hits all enemies in rect on specific frames.
-                # For more advanced, add a list to player: self.hit_this_swing = []
-                # Clear it on attack_anim.reset(). Add enemy to it when hit.
-                if self.attack_anim.current_frame_index == 1: # Example: damage dealt on frame 1 (0-indexed)
+            if attack_rect:
+                # Example: Damage on frame 1 (0-indexed). Could be specific frames.
+                # To prevent hitting multiple times with one swing on the same enemy,
+                # you might need a list of enemies already hit in this current swing.
+                # For simplicity, this hits on frame 1.
+                if self.attack_anim.current_frame_index == 1: # Or other specific damage frames
                     for enemy_instance in enemies_list:
                         if enemy_instance.alive and attack_rect.colliderect(enemy_instance.rect):
                             enemy_instance.take_damage(1) # Player damage = 1
-                            # print(f"Player hit enemy {id(enemy_instance)}")
-                            # To hit only one enemy: break
+                            # To hit only one enemy per swing or per frame, add more logic here
 
-        # Set animation based on state (if not attacking)
+        # Animation selection (if not attacking, or if attack just finished)
         if not self.is_attacking:
-            keys = pygame.key.get_pressed() # Simple way to check if moving for animation
-            is_moving_for_anim = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]
+            # Check current movement input to decide between idle and walk
+            # This requires getting key state, which is usually done in the game loop's input handling.
+            # For now, we assume that if player.move was called with non-zero dx, they are "trying to move".
+            # A more robust way is to check pygame.key.get_pressed() here.
+            keys = pygame.key.get_pressed() # Get current key state for accurate animation
+            is_moving_input = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]
 
-            if not self.on_ground: # Jumping/Falling
+            if not self.on_ground:
                 self.current_animation = self.idle_anim # Or a dedicated jump/fall animation
-            elif is_moving_for_anim:
+            elif is_moving_input: # Player is pressing left/right
                 self.current_animation = self.walk_anim
-            else: # Idle on ground
+            else: # Player is on ground and not pressing left/right
                 self.current_animation = self.idle_anim
 
-        # Always update the current animation (unless it's a non-looping one that's done)
+        # Always update the chosen current animation
         if self.current_animation:
             self.current_animation.update(dt_seconds)
 
@@ -134,20 +151,19 @@ class Player:
         if self.alive and self.health < self.max_health:
             self.time_since_last_damage += dt_seconds
             if self.time_since_last_damage >= self.heal_after_no_damage_duration:
-                # Player is eligible to start/continue healing
                 self.time_accumulated_for_heal_tick += dt_seconds
                 if self.time_accumulated_for_heal_tick >= self.heal_interval:
                     self.health += 1
-                    self.health = min(self.health, self.max_health) # Cap at max health
-                    self.time_accumulated_for_heal_tick -= self.heal_interval # Use remainder for accuracy
-                    # print(f"Player healed to {self.health}/{self.max_health}") # Optional: for debugging
+                    self.health = min(self.health, self.max_health)
+                    self.time_accumulated_for_heal_tick -= self.heal_interval
 
 
     def draw(self, screen, camera_rect, zoom):
         if not self.alive: return
 
         frame_to_draw = self.current_animation.get_current_frame()
-        if not frame_to_draw: # Fallback if animation somehow has no frame
+        if not frame_to_draw:
+            # Fallback rectangle if no frame (should ideally not happen)
             pygame.draw.rect(screen, (0,255,0),
                                 ((self.rect.x - camera_rect.x) * zoom,
                                 (self.rect.y - camera_rect.y) * zoom,
@@ -160,7 +176,7 @@ class Player:
 
         scaled_width = int(self.rect.width * zoom)
         scaled_height = int(self.rect.height * zoom)
-        if scaled_width <=0 or scaled_height <=0: return
+        if scaled_width <=0 or scaled_height <=0: return # Avoid scaling to zero or negative
 
         scaled_img = pygame.transform.scale(display_frame, (scaled_width, scaled_height))
 
@@ -170,13 +186,12 @@ class Player:
         screen.blit(scaled_img, (screen_x, screen_y))
 
     def take_damage(self, damage):
-        if not self.alive: return # Cannot take damage if not alive
+        if not self.alive: return
 
         self.health -= damage
-        self.time_since_last_damage = 0.0  # Reset timer on taking damage
-        self.time_accumulated_for_heal_tick = 0.0 # Reset heal tick progress
+        self.time_since_last_damage = 0.0
+        self.time_accumulated_for_heal_tick = 0.0
 
-        # print(f"Player took {damage} damage, health: {self.health}") # Optional: for debugging
         if self.health <= 0:
             self.health = 0
             self.die()
