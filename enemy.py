@@ -3,8 +3,13 @@ import pygame
 from gameobject import Animation, GameObject 
 
 class Enemy(GameObject):
-    def __init__(self, x, y, width, height, animation_images_dict, attack_range=50, damage=1): # Takes dict of images
+    def __init__(self, x, y, width, height, animation_images_dict, attack_range=50, damage=1,enemy_uid=None): # Takes dict of images
         super().__init__(x, y, width, height)
+        self.uid = enemy_uid # ADDED: Store the unique ID
+        self.initial_x = x # Store initial position for potential dynamic ID generation fallback
+        self.initial_y = y
+        # self.enemy_type_label = enemy_type_label # Store if using dynamic ID with type
+
         self.alive = True
         # Adjust speed to pixels per second for time-based movement
         self.speed = 80 # e.g., 80 pixels per second for patrol
