@@ -7,6 +7,11 @@ class Player:
         self.alive = True
         self.rect = pygame.Rect(x, y, width, height)
         self.speed = 200 # Pixels per second
+
+        self.default_jump_power = -13 # The normal jump power
+        self.jump_power = self.default_jump_power # Current jump power, can be modified
+        self.original_jump_power = self.default_jump_power # Store the initial jump_power for resetting
+
         self.jump_power = -13 # Keep as instantaneous velocity change
         self.velocity_y = 0
         self.on_ground = False
@@ -190,7 +195,7 @@ class Player:
 
         self.health -= damage
         self.time_since_last_damage = 0.0
-        self.time_accumulated_for_heal_tick = 0.0
+        self.time_accumulated_for_heal_tick = 0.0 # Reset healing accumulator on damage
 
         if self.health <= 0:
             self.health = 0
@@ -199,3 +204,4 @@ class Player:
     def die(self):
         self.alive = False
         print("Player has died!")
+        # Additional death logic can be added here, like respawning or game over screen.
