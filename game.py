@@ -107,6 +107,8 @@ class Game:
     def reset_game(self):
         self.player.health = self.player.max_health
         self.player.alive = True
+        # Reset player's jump power to original in case it was modified
+        self.player.jump_power = self.player.original_jump_power # ADD THIS LINE
         self.player.time_since_last_damage = 0.0
         self.player.time_accumulated_for_heal_tick = 0.0
         self.player_data = {"geo": 0, "inventory": []}
@@ -116,6 +118,7 @@ class Game:
             "void_heart_obtained": False,
             "noze_item_accepted": False,      # ADDED: Player accepted Noze's item
             "noze_item_declined": False,      # ADDED: Player declined Noze's item
+            "noze_cursed_jump_active": False,
             "hornhead_first_talk_done": False, # If you added this for Hornhead
         }
         self.npc_interaction_candidate = None # Reset candidate on game reset
@@ -297,9 +300,11 @@ class Game:
         if chosen_option == "Yes":
             self.story_flags["noze_item_accepted"] = True
             self.story_flags["noze_item_declined"] = False # Ensure other choice is false
-            print("Player accepted Noze's item.")
-            # TODO: Add the item to player's inventory if you have one
-            # self.player_data["inventory"].append("Mysterious Thing from Noze")
+            print("Player accepted Noze's item. Jump power modified!")
+            self.player.jump_power = -50  # Set very high jump power
+            self.story_flags["noze_cursed_jump_active"] = True # Activate the curse for the next landing
+            # You might add an item to inventory here if you wish:
+            # self.player_data["inventory"].append("Noze's 'Gift'")
         else: # "No"
             self.story_flags["noze_item_declined"] = True
             self.story_flags["noze_item_accepted"] = False # Ensure other choice is false
@@ -419,6 +424,7 @@ class Game:
 
     def check_vertical_collisions(self):
         if not self.player or not self.player.alive: return
+        was_in_air = not self.player.on_ground # Check if player was in air before this collision check
         self.player.on_ground = False
         for platform in self.platforms:
             if platform.is_wall: continue
@@ -427,9 +433,23 @@ class Game:
                     self.player.rect.bottom = platform.rect.top
                     self.player.velocity_y = 0
                     self.player.on_ground = True
-                elif self.player.velocity_y < 0 and (self.player.rect.top - self.player.velocity_y) >= platform.rect.bottom - 1 and self.player.rect.top <= platform.rect.bottom:
+
+                    if was_in_air and self.story_flags.get("noze_cursed_jump_active"):
+                        print("Noze's curse strikes upon landing!")
+                        self.player.take_damage(3) # Apply lethal damage
+                        self.player.jump_power = self.player.original_jump_power # Reset jump power
+                        self.story_flags["noze_cursed_jump_active"] = False # Deactivate curse
+
+                    break # Player can only be on one platform at a time like this
+                
+                elif self.player.velocity_y < 0 and \
+                     (self.player.rect.top - self.player.velocity_y) >= platform.rect.bottom - 1 and \
+                     self.player.rect.top <= platform.rect.bottom:
                     self.player.rect.top = platform.rect.bottom
                     self.player.velocity_y = 0
+                   
+
+            
 
     def handle_input(self): # Event handling for KEYDOWN is now primary in the event loop
         if not self.player or not self.player.alive : return
