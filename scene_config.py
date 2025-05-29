@@ -3,7 +3,7 @@
 # Define Scene IDs as constants for easier reference and less typos
 SCENE_ID_SHRINE_START = 'shrine_start'
 SCENE_ID_SHRINE_AFTER_TRUTHSEEKER_TALK = 'shrine_after_truthseeker_talk' # Example
-SCENE_ID_CAVE_PATH_ENTRY = 'cave_path_entry'
+SCENE_ID_SCENE2 = 'cave_path_entry'
 SCENE_ID_SCENE3 = 'scene3' # New Scene 3 ID
 SCENE_ID_SCENE4 = 'scene4' # New Scene 4 ID
 SCENE_ID_SCENE5 = 'scene5' # New Scene 5 ID
@@ -52,12 +52,12 @@ SCENES_DATA = [
                 'rect_coords': (GAME_WIDTH - 60, GAME_HEIGHT - 180, 50, 160), # Right edge, on floor1_img
                 'required_story_flag': 'truth_seeker_initial_talk_done',
                 'must_all_enemies_be_slain': True,
-                'target_scene_id': SCENE_ID_CAVE_PATH_ENTRY
+                'target_scene_id': SCENE_ID_SCENE2
             }
         ]
     },
     {
-        'id': SCENE_ID_CAVE_PATH_ENTRY, # Scene 2
+        'id': SCENE_ID_SCENE2, # Scene 2
         'player_start_pos': (50, GAME_HEIGHT - 70 - 50), # Player height = 50, on floor
         'background_key': 'cave_bg', # User needs to ensure 'cave_bg' is loaded
         'world_dimensions': (1600, GAME_HEIGHT), # A wider cave area
@@ -74,10 +74,7 @@ SCENES_DATA = [
                 'name': 'steelsoul', 'x': 700, 'y': GAME_HEIGHT - 70 - 70, # On floor
                 'width': 50, 'height': 70, 'image_key': 'steelsoul',
             },
-            {
-                'name': 'noze', 'x': 1200, 'y': GAME_HEIGHT - 70 - 70, # On floor, towards the end
-                'width': 60, 'height': 80, 'image_key': 'noze', # Slightly different size
-            }
+            
         ],
         'enemy_definitions': [
             {'x': 450, 'y': GAME_HEIGHT - 70 - 60, 'width': 60, 'height': 60, 'type': 'cave_crawler', 'attack_range': 40, 'damage': 1},
@@ -111,9 +108,9 @@ SCENES_DATA = [
             (1800, 0, 10, GAME_HEIGHT, 'wall_img', True),
         ],
         'npc_definitions': [
-            { # Add a new NPC type, e.g., 'hermit'
+            { # Add a new NPC type, e.g., ''
                 'name': 'noze', 'x': 800, 'y': GAME_HEIGHT - 90 - 70,
-                'width': 50, 'height': 70, 'image_key': 'hermit_img', # Create 'hermit_img.png'
+                'width': 50, 'height': 70, 'image_key': 'noze_img', # 
             }
         ],
         'enemy_definitions': [
@@ -125,10 +122,10 @@ SCENES_DATA = [
             {
                 'type': 'player_at_location',
                 'rect_coords': (1, GAME_HEIGHT - 140, 40, 120), # Left exit to Cave Path
-                'target_scene_id': SCENE_ID_CAVE_PATH_ENTRY
+                'target_scene_id': SCENE_ID_SCENE2
             },
             {
-                'type': 'player_at_location',
+                'type': 'player_at_location',# game_height = 600, so GAME_HEIGHT - 160 = 440
                 'rect_coords': (1800 - 60, GAME_HEIGHT - 160, 50, 140), # Right exit to Scene 4
                 'target_scene_id': SCENE_ID_SCENE4
             }
@@ -151,8 +148,8 @@ SCENES_DATA = [
             (GAME_WIDTH, 0, 10, GAME_HEIGHT + 200, 'wall_img', True),
         ],
         'npc_definitions': [
-            { # NPC for Scene 4 is 'hornhead'
-                'name': 'hornhead', 'x': GAME_WIDTH - 300, 'y': GAME_HEIGHT + 200 - 60 - 70, # Adjust y for Hornhead's height
+            { # NPC for Scene 4 is 'hornhead'# game_height = 600, so GAME_HEIGHT + 200 - 60 = 640, game_width = 1200,so GAME_WIDTH - 300 = 900
+                'name': 'hornhead', 'x': 800, 'y': 690, # Adjust y for Hornhead's height
                 'width': 70, 'height': 90, 'image_key': 'hornhead_img', # Create 'hornhead_img.png'
                 'on_interaction_end': {
                 'set_story_flag': 'hornhead_first_talk_done'
@@ -171,7 +168,8 @@ SCENES_DATA = [
             },
             { # Transition to Scene 5 - could be at the top
                 'type': 'player_at_location',
-                'rect_coords': (GAME_WIDTH - 200, GAME_HEIGHT + 200 - 600, 150, 40), # On the top platform
+                #parameters is ( x, y, width, height) so GAME_WIDTH - 200 = 1000, GAME_HEIGHT + 200 - 600 = 200
+                'rect_coords': (1160, 690, 150, 40), # On the top platform
                 'target_scene_id': SCENE_ID_SCENE5
             }
         ]
@@ -193,8 +191,8 @@ SCENES_DATA = [
         ],
         'npc_definitions': [
             { # Add a new NPC type, e.g., 'guardian_spirit'
-                'name': 'witcher', 'x': 1600, 'y': GAME_HEIGHT - 100 - 80, # Guarding something
-                'width': 60, 'height': 80, 'image_key': 'guardian_img', # Create 'guardian_img.png'
+                'name': 'witcher', 'x': 1600, 'y': GAME_HEIGHT - 100 - 80, 
+                'width': 60, 'height': 80, 'image_key': 'witcher_img', 
             }
         ],
         'enemy_definitions': [
