@@ -3,7 +3,7 @@ import pygame
 import sys
 import math
 
-from npc import NPC, truth_seeker_dialogs, steelsoul_dialogs, noze_dialogs, lost_knight_dialogs
+from npc import NPC, truth_seeker_dialogs, steelsoul_dialogs, noze_dialogs, hornhead_dialogs
 from character import Player
 from enemy import Enemy
 from gameobject import Platform, Animation, create_platforms_for_level
@@ -43,16 +43,21 @@ class Game:
             'truth_seeker': self.loaded_assets.get('truth_seeker_img'),
             'steelsoul': self.loaded_assets.get('steelsoul_img'),
             'noze': self.loaded_assets.get('noze_img'),
+            'hornhead': self.loaded_assets.get('hornhead_img'),         # ADD NEW (ensure 'hermit_img' key in load_assets)
+            'witcher': self.loaded_assets.get('witcher_img'),       # ADD NEW
         }
         self.background_image_assets = {
             'main_bg': self.loaded_assets.get('main_bg'),
             'cave_bg': self.loaded_assets.get('cave_bg'),
+            'forest_bg': self.loaded_assets.get('forest_bg'),       # ADD NEW
+            'mountain_bg': self.loaded_assets.get('mountain_bg'),   # ADD NEW
+            'ruins_bg': self.loaded_assets.get('ruins_bg'),         # ADD NEW
         }
         self.all_npc_dialogs = {
             'truth_seeker': truth_seeker_dialogs,
             'steelsoul': steelsoul_dialogs,
             'noze': noze_dialogs,
-            'lost_knight': lost_knight_dialogs,
+            'hornhead': hornhead_dialogs,        
         }
         self.raw_enemy_images = {
             'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
