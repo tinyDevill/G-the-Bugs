@@ -37,7 +37,7 @@ def load_assets(screen_width_for_scaling, screen_height_for_scaling): # Paramete
         assets['start_button_img'] = pygame.transform.scale(start_button_img, (200, 100))
         exit_button_img = pygame.image.load("assets/image/exit_button.png").convert_alpha()
         assets['exit_button_img'] = pygame.transform.scale(exit_button_img, (200, 100))
-
+        assets['home_screen'] = pygame.image.load("assets/image/home_screen.png").convert_alpha()
         
         assets['main_bg'] = pygame.image.load("assets/image/platform/pl2/bg2.png").convert()
         assets['floor1_img'] = pygame.image.load("assets/image/platform/pl2/floor2_1.png").convert_alpha()
