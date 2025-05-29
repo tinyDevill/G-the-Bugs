@@ -1,3 +1,5 @@
+#animation.py
+
 class Animation:
     def __init__(self, frames, frame_duration, loop=True):
         self.frames = frames
