@@ -63,9 +63,15 @@ def load_assets(screen_width_for_scaling, screen_height_for_scaling): # Paramete
         print(f"Error loading an asset in screen.py: {e}")
         # You might want to fill missing assets with placeholder surfaces
         placeholder_surface = pygame.Surface((50,50)); placeholder_surface.fill((255,0,255)) # Magenta
-        for key in ['main_bg', 'floor1_img', 'floor2_img', 'platform_img', 'benchbottom_img', 
-                    'benchside2_1_img', 'benchside2_2_img', 'wall_img', 'start_button_img', 
-                    'exit_button_img', 'truth_seeker_img', 'steelsoul_img', 'noze_img', 'cave_bg']:
+        keys_to_check = [
+            'main_bg', 'floor1_img', 'floor2_img', 'platform_img', 
+            'benchbottom_img', 'benchside2_1_img', 'benchside2_2_img', 'wall_img',
+            'start_button_img', 'exit_button_img', 'home_screen', # Added home_screen
+            'truth_seeker_img', 'steelsoul_img', 'noze_img', 
+            'hornhead_img', 'witcher_img', # Added new NPC images
+            'cave_bg', 'forest_bg', 'mountain_bg', 'ruins_bg' # Added new backgrounds
+        ]
+        for key in keys_to_check:
             if key not in assets:
                 assets[key] = placeholder_surface
                 print(f"Using placeholder for missing asset: {key}")
