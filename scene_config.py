@@ -109,7 +109,7 @@ SCENES_DATA = [
         ],
         'npc_definitions': [
             { # Add a new NPC type, e.g., ''
-                'name': 'noze', 'x': 800, 'y': GAME_HEIGHT - 90 - 70,
+                'name': 'noze', 'x': 800, 'y': 440, # GAME_HEIGHT = 600, so GAME_HEIGHT - 90 - 70 = 440 
                 'width': 50, 'height': 70, 'image_key': 'noze_img', # 
             }
         ],
