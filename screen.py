@@ -32,33 +32,32 @@ class Camera:
 def load_assets(screen_width_for_scaling, screen_height_for_scaling): # Parameters might be for default scaling
     assets = {}
     try:
-        assets['main_bg'] = pygame.image.load("assets/image/platform/pl2/bg2.png").convert()
-        # Scale background to a default large size if needed, or let levels define world size
-        # assets['main_bg'] = pygame.transform.scale(assets['main_bg'], (screen_width_for_scaling, screen_height_for_scaling))
         
-        assets['floor1_img'] = pygame.image.load("assets/image/platform/pl2/floor2_2.png").convert_alpha()
-        assets['floor2_img'] = pygame.image.load("assets/image/platform/pl2/floor2_1.png").convert_alpha()
+        start_button_img = pygame.image.load("assets/image/start_button.png").convert_alpha()
+        assets['start_button_img'] = pygame.transform.scale(start_button_img, (200, 100))
+        exit_button_img = pygame.image.load("assets/image/exit_button.png").convert_alpha()
+        assets['exit_button_img'] = pygame.transform.scale(exit_button_img, (200, 100))
+
+        
+        assets['main_bg'] = pygame.image.load("assets/image/platform/pl2/bg2.png").convert()
+        assets['floor1_img'] = pygame.image.load("assets/image/platform/pl2/floor2_1.png").convert_alpha()
+        assets['floor2_img'] = pygame.image.load("assets/image/platform/pl2/floor2_2.png").convert_alpha()
         assets['platform_img'] = pygame.image.load("assets/image/platform/pl2/platform2.png").convert_alpha()
         assets['benchbottom_img'] = pygame.image.load("assets/image/platform/pl2/benchbottom.png").convert_alpha()
         assets['benchside2_1_img'] = pygame.image.load("assets/image/platform/pl2/benchside2_1.png").convert_alpha()
         assets['benchside2_2_img'] = pygame.image.load("assets/image/platform/pl2/benchside2_2.png").convert_alpha()
         assets['wall_img'] = pygame.image.load("assets/image/platform/pl2/wall2_1.png").convert_alpha()
         
-        start_button_img = pygame.image.load("assets/image/start_button.png").convert_alpha()
-        assets['start_button_img'] = pygame.transform.scale(start_button_img, (200, 100))
-        exit_button_img = pygame.image.load("assets/image/exit_button.png").convert_alpha()
-        assets['exit_button_img'] = pygame.transform.scale(exit_button_img, (200, 100))
-        
         assets['truth_seeker_img'] = pygame.image.load("assets/image/truth_seeker.gif").convert_alpha()
-        
+    
         # Load other assets and add them to the dictionary
         assets['steelsoul_img'] = pygame.image.load("assets/image/steelsoul.png").convert_alpha()
         assets['noze_img'] = pygame.image.load("assets/image/noze.png").convert_alpha()
         cave_bg_temp = pygame.image.load("assets/image/platform/pl3/bg3.png").convert()
         assets['cave_bg'] = pygame.transform.scale(cave_bg_temp, (1600, screen_height_for_scaling)) # Example scale
-        # Make sure to create these placeholder images or your actual assets
-        # assets['lost_knight_img'] = pygame.image.load("assets/image/lost_knight.png").convert_alpha() 
-        
+        assets['hornhead_img'] = pygame.image.load("assets/image/Hornhead.png").convert_alpha()  # EXAMPLE PATH
+        assets['witcher_img'] = pygame.image.load("assets/image/witcher.png").convert_alpha()    # EXAMPLE PATH
+
 
     except pygame.error as e:
         print(f"Error loading an asset in screen.py: {e}")
