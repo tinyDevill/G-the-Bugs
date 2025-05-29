@@ -70,6 +70,7 @@ class Game:
         }
         self.start_button_img = self.loaded_assets.get('start_button_img')
         self.exit_button_img = self.loaded_assets.get('exit_button_img')
+        self.home_screen_img = self.loaded_assets.get('home_screen')
 
         self.scenes_data = SCENES_DATA
         self.current_scene_id = None
@@ -611,10 +612,19 @@ class Game:
 
             self.screen.fill((10, 10, 10))
             if self.state == "menu":
-                if self.background_image_assets.get('home_screen'):
-                    self.screen.blit(pygame.transform.scale(self.background_image_assets['home_screen'], (self.WIDTH, self.HEIGHT)), (0,0)) #the last parameter
-                if self.start_button_img: self.screen.blit(self.start_button_img, self.start_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 - 40)))
-                if self.exit_button_img: self.screen.blit(self.exit_button_img, self.exit_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 + 40)))
+                if self.home_screen_img: # Check if home_screen_img was loaded
+                    self.screen.blit(pygame.transform.scale(self.home_screen_img, (self.WIDTH, self.HEIGHT)), (0,0))
+                elif self.background_image_assets.get('main_bg'): # Fallback to main_bg if home_screen not available
+                    self.screen.blit(pygame.transform.scale(self.background_image_assets['main_bg'], (self.WIDTH, self.HEIGHT)), (0,0))
+                else: # Absolute fallback: a solid color
+                    self.screen.fill((30, 30, 70)) # E.g., a dark blue
+
+                # Draw menu buttons on top of the background
+                if self.start_button_img: 
+                    self.screen.blit(self.start_button_img, self.start_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 - 40)))
+                if self.exit_button_img: 
+                    self.screen.blit(self.exit_button_img, self.exit_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 + 40)))
+            
             
             elif self.state == "playing" or self.state == "paused":
                 if self.current_background:
