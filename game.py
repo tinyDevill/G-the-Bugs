@@ -3,7 +3,7 @@ import pygame
 import sys
 import math
 
-from npc import NPC, truth_seeker_dialogs, steelsoul_dialogs, noze_dialogs, hornhead_dialogs
+from npc import NPC, truth_seeker_dialogs, steelsoul_dialogs, noze_dialogs, hornhead_dialogs , witcher_dialogs
 from character import Player
 from enemy import Enemy
 from gameobject import Platform, Animation, create_platforms_for_level
@@ -42,9 +42,9 @@ class Game:
         self.npc_image_assets = {
             'truth_seeker': self.loaded_assets.get('truth_seeker_img'),
             'steelsoul': self.loaded_assets.get('steelsoul_img'),
-            'noze': self.loaded_assets.get('noze_img'),
-            'hornhead': self.loaded_assets.get('hornhead_img'),         # ADD NEW (ensure 'hermit_img' key in load_assets)
-            'witcher': self.loaded_assets.get('witcher_img'),       # ADD NEW
+            'noze_img': self.loaded_assets.get('noze_img'),
+            'hornhead_img': self.loaded_assets.get('hornhead_img'),         # ADD NEW (ensure 'hermit_img' key in load_assets)
+            'witcher_img': self.loaded_assets.get('witcher_img'),       # ADD NEW
         }
         self.background_image_assets = {
             'main_bg': self.loaded_assets.get('main_bg'),
@@ -57,7 +57,8 @@ class Game:
             'truth_seeker': truth_seeker_dialogs,
             'steelsoul': steelsoul_dialogs,
             'noze': noze_dialogs,
-            'hornhead': hornhead_dialogs,        
+            'hornhead': hornhead_dialogs,    
+            'witcher': witcher_dialogs,     
         }
         self.raw_enemy_images = {
             'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
@@ -92,6 +93,15 @@ class Game:
         
         self.npc_interaction_candidate = None # Stores NPC if player is close enough to interact
 
+        # atrubutes for dialog choice system
+        self.dialog_choice_active = False  # True when a Yes/No prompt is shown
+        self.dialog_choice_prompt_text = "" # The question text (e.g., "Do you want to take the thing?")
+        self.dialog_choice_options = []    # List of option strings (e.g., ["Yes", "No"])
+        self.dialog_choice_selected_index = 0 # Index of the currently highlighted option
+        self.dialog_choice_callback = None # Function to call when a choice is made
+        self.dialog_choice_rect = pygame.Rect(0, 0, 0, 0) # Visual bounding box for the prompt
+        self.choice_option_rects = [] # To store rects of "Yes", "No" for mouse clicks
+
         self.reset_game()
 
     def reset_game(self):
@@ -104,8 +114,12 @@ class Game:
             "truth_seeker_initial_talk_done": False,
             "truth_seeker_quest_accepted": False,
             "void_heart_obtained": False,
+            "noze_item_accepted": False,      # ADDED: Player accepted Noze's item
+            "noze_item_declined": False,      # ADDED: Player declined Noze's item
+            "hornhead_first_talk_done": False, # If you added this for Hornhead
         }
         self.npc_interaction_candidate = None # Reset candidate on game reset
+        self.dialog_choice_active = False # Reset choice state
         if self.scenes_data:
             self.load_scene(SCENE_ID_SHRINE_START)
         else:
@@ -156,6 +170,7 @@ class Game:
         for enemy_def in scene_config.get('enemy_definitions', []):
             self.enemies.append(Enemy(enemy_def['x'], enemy_def['y'], enemy_def.get('width', enemy_default_w), enemy_def.get('height', enemy_default_h), self.raw_enemy_images, attack_range=enemy_def.get('attack_range', 50), damage=enemy_def.get('damage', 1)))
 
+        self.dialog_choice_active = False # Reset choice state on any scene load
         self.camera.rect.center = self.player.rect.center
         self.light_angle = 0
         self.interacting_npc = None
@@ -236,26 +251,149 @@ class Game:
         self.current_dialog_line_index += 1
         if self.current_dialog_line_index >= len(self.active_dialog):
             self.handle_npc_dialog_completion()
+    def end_interaction(self):
+        self.interacting_npc = None
+        self.active_dialog = []
+        self.current_dialog_line_index = 0
+        self.last_dialog_key_spoken_by_npc = None
+        # Potentially re-check for interaction candidate if player is still near an NPC
+        # self.update_npc_interaction_candidate() # This will be called in the main loop anyway
+
+
+
+    def activate_dialog_choice(self, prompt, options, callback_function):
+        """Activates the Yes/No choice prompt."""
+        self.dialog_choice_active = True
+        self.dialog_choice_prompt_text = prompt
+        self.dialog_choice_options = options
+        self.dialog_choice_selected_index = 0  # Default to the first option ("Yes")
+        self.dialog_choice_callback = callback_function
+
+        # Define the visual appearance of the choice box
+        # You can customize dimensions and positioning
+        font_for_size_check = self.dialog_font # or self.font
+        prompt_width, prompt_height = font_for_size_check.size(prompt)
+        option_widths = [font_for_size_check.size(opt)[0] for opt in options]
+        max_option_width = max(option_widths) if option_widths else 100
+
+        box_width = max(prompt_width, max_option_width) + 60 # Add padding
+        box_height = prompt_height + (len(options) * (font_for_size_check.get_height() + 10)) + 60 # Padding and space for options
+        
+        self.dialog_choice_rect = pygame.Rect(
+            (self.WIDTH - box_width) // 2,
+            (self.HEIGHT - box_height) // 2 - 30, # Slightly above center
+            box_width,
+            box_height
+        )
+        # Clear regular dialog as we are now in a choice prompt
+        self.active_dialog = []
+        self.current_dialog_line_index = 0
+
+
+    def handle_noze_item_choice(self, selected_option_index):
+        """Callback specific to Noze's item offer choice."""
+        chosen_option = self.dialog_choice_options[selected_option_index]
+
+        if chosen_option == "Yes":
+            self.story_flags["noze_item_accepted"] = True
+            self.story_flags["noze_item_declined"] = False # Ensure other choice is false
+            print("Player accepted Noze's item.")
+            # TODO: Add the item to player's inventory if you have one
+            # self.player_data["inventory"].append("Mysterious Thing from Noze")
+        else: # "No"
+            self.story_flags["noze_item_declined"] = True
+            self.story_flags["noze_item_accepted"] = False # Ensure other choice is false
+            print("Player declined Noze's item.")
+        
+        self.dialog_choice_active = False # Deactivate the choice prompt
+        self.end_interaction() # End the overall interaction with Noze
+
+
+    def draw_dialog_choice_prompt(self):
+        """Draws the Yes/No prompt box and options on the screen."""
+        if not self.dialog_choice_active:
+            return
+
+        # 1. Draw background box (semi-transparent)
+        overlay_surface = pygame.Surface(self.dialog_choice_rect.size, pygame.SRCALPHA)
+        overlay_surface.fill((20, 20, 20, 210)) # Dark, semi-transparent
+        self.screen.blit(overlay_surface, self.dialog_choice_rect.topleft)
+        pygame.draw.rect(self.screen, (150, 150, 150), self.dialog_choice_rect, 2, border_radius=3) # Border
+
+        # 2. Draw prompt text
+        prompt_surface = self.dialog_font.render(self.dialog_choice_prompt_text, True, (230, 230, 230))
+        prompt_pos_x = self.dialog_choice_rect.centerx - prompt_surface.get_width() // 2
+        prompt_pos_y = self.dialog_choice_rect.top + 20
+        self.screen.blit(prompt_surface, (prompt_pos_x, prompt_pos_y))
+
+        # 3. Draw options ("Yes", "No")
+        self.choice_option_rects.clear() # Clear previous rects for mouse detection
+        option_start_y = prompt_pos_y + prompt_surface.get_height() + 25
+        option_spacing = self.dialog_font.get_height() + 10
+
+        for i, option_text in enumerate(self.dialog_choice_options):
+            color = (200, 200, 200) # Default color
+            prefix = "  "
+            if i == self.dialog_choice_selected_index:
+                color = (255, 255, 100) # Highlighted color for selected option
+                prefix = "> "
+            
+            option_surface = self.dialog_font.render(prefix + option_text, True, color)
+            option_pos_x = self.dialog_choice_rect.centerx - option_surface.get_width() // 2
+            option_pos_y = option_start_y + i * option_spacing
+            option_rect = option_surface.get_rect(topleft=(option_pos_x, option_pos_y))
+            
+            self.screen.blit(option_surface, option_rect.topleft)
+            self.choice_option_rects.append(option_rect)
+
 
     def handle_npc_dialog_completion(self):
         if not self.interacting_npc or not self.current_scene_id:
             self.end_interaction()
             return
+
         npc_name_interacted = self.interacting_npc.name
         dialog_key_just_finished = self.last_dialog_key_spoken_by_npc
+
+        # --- Special handling for Noze's item offer ---
+        if npc_name_interacted == "noze" and dialog_key_just_finished == "initial_offer":
+            if not self.story_flags.get("noze_item_accepted") and not self.story_flags.get("noze_item_declined"):
+                self.activate_dialog_choice(
+                    prompt="Do you want to take the thing?",
+                    options=["Yes", "No"],
+                    callback_function=self.handle_noze_item_choice
+                )
+                # Interaction is not fully over; waiting for player's choice.
+                # We return here to prevent normal 'on_interaction_end' flag setting from scene_config
+                # and to keep 'self.interacting_npc' set for the callback.
+                return 
+            # If choice already made, just end interaction (NPC.interact will give follow-up)
+            # This case should ideally be handled by NPC.interact() already giving the followup.
+            # For safety, we can end here if flags are already set.
+            # self.end_interaction() # This might be redundant if NPC.interact changes dialog
+            # return
+
+        # --- Normal on_interaction_end processing (for other NPCs or other dialogs) ---
         current_scene_cfg = next((sc for sc in self.scenes_data if sc['id'] == self.current_scene_id), None)
         npc_config_in_scene = None
         if current_scene_cfg:
             npc_config_in_scene = next((npc_def for npc_def in current_scene_cfg.get('npc_definitions', []) if npc_def['name'] == npc_name_interacted), None)
         
         scene_changed_by_dialog = False
-        if npc_config_in_scene and dialog_key_just_finished:
+        if npc_config_in_scene:
             on_end_actions = npc_config_in_scene.get('on_interaction_end')
             if on_end_actions:
+                # Check if this on_end_action should apply only to specific dialog keys (optional advanced feature)
+                # Example: dialog_key_condition = on_end_actions.get('if_dialog_key_was')
+                # if not dialog_key_condition or dialog_key_condition == dialog_key_just_finished:
+
                 flag_to_set = on_end_actions.get('set_story_flag')
                 if flag_to_set:
-                    self.story_flags[flag_to_set] = True
-                    print(f"Story flag set by {npc_name_interacted}: {flag_to_set} = True")
+                    # Prevent re-setting flags if already set, or handle as needed
+                    if not self.story_flags.get(flag_to_set, False) or on_end_actions.get("allow_reset", False):
+                         self.story_flags[flag_to_set] = True
+                         print(f"Story flag set by {npc_name_interacted} (dialog: '{dialog_key_just_finished}'): {flag_to_set} = True")
+                
                 next_scene_trigger = on_end_actions.get('next_scene_if_flag_is_also_set')
                 if next_scene_trigger:
                     required_flag = next_scene_trigger.get('flag')
@@ -264,16 +402,11 @@ class Game:
                         print(f"NPC {npc_name_interacted} triggering scene change to {target_scene_id}.")
                         self.load_scene(target_scene_id)
                         scene_changed_by_dialog = True
-        if not scene_changed_by_dialog:
+        
+        # If no scene change occurred and we are not in a dialog choice, end the interaction.
+        if not scene_changed_by_dialog and not self.dialog_choice_active:
             self.end_interaction()
 
-    def end_interaction(self):
-        self.interacting_npc = None
-        self.active_dialog = []
-        self.current_dialog_line_index = 0
-        self.last_dialog_key_spoken_by_npc = None
-        # Potentially re-check for interaction candidate if player is still near an NPC
-        # self.update_npc_interaction_candidate() # This will be called in the main loop anyway
 
     def check_horizontal_collisions(self, original_x):
         if not self.player or not self.player.alive: return
@@ -300,10 +433,11 @@ class Game:
 
     def handle_input(self): # Event handling for KEYDOWN is now primary in the event loop
         if not self.player or not self.player.alive : return
+        if self.dialog_choice_active: return
         keys = pygame.key.get_pressed()
         original_x = self.player.rect.x
         player_moved_x_input = 0
-        if not self.player.is_attacking and not self.active_dialog:
+        if not self.player.is_attacking and not self.active_dialog: # self.dialog_choice_active already handled above
             if keys[pygame.K_LEFT]: player_moved_x_input = -1
             if keys[pygame.K_RIGHT]: player_moved_x_input = 1
         self.player.move(player_moved_x_input, self.clock.get_time() / 1000.0)
@@ -319,6 +453,33 @@ class Game:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: running = False
+                if self.dialog_choice_active:
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_UP or event.key == pygame.K_w:
+                            self.dialog_choice_selected_index = (self.dialog_choice_selected_index - 1 + len(self.dialog_choice_options)) % len(self.dialog_choice_options)
+                        elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                            self.dialog_choice_selected_index = (self.dialog_choice_selected_index + 1) % len(self.dialog_choice_options)
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_e: # Confirm choice
+                            if self.dialog_choice_callback:
+                                self.dialog_choice_callback(self.dialog_choice_selected_index)
+                        # Optional: Allow Esc to cancel/default to "No"
+                        # elif event.key == pygame.K_ESCAPE:
+                        #     self.handle_noze_item_choice(1) # Assuming index 1 is "No"
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1: # Left mouse button
+                            mouse_pos = event.pos
+                            for i, option_rect in enumerate(self.choice_option_rects):
+                                if option_rect.collidepoint(mouse_pos):
+                                    self.dialog_choice_selected_index = i # Visually select
+                                    if self.dialog_choice_callback:
+                                        self.dialog_choice_callback(self.dialog_choice_selected_index) # Process choice
+                                    break 
+
+                # If dialog choice is active, generally consume other inputs for this frame
+                # to prevent them from affecting the game underneath.
+                # However, QUIT should always work.
+                    if event.type != pygame.QUIT:
+                        continue # Skip further event processing for this event if choice is active
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event.pos
                     if self.state == "menu":
@@ -438,14 +599,16 @@ class Game:
                     coords_surf = self.font.render(f"Coords: ({int(self.player.rect.x)}, {int(self.player.rect.y)})", True, (200,200,200))
                     self.screen.blit(coords_surf, (10, 70))
 
-                if self.active_dialog and self.interacting_npc:
+                if self.active_dialog and self.interacting_npc: # No need to check !self.dialog_choice_active if self.active_dialog is cleared
                     pygame.draw.rect(self.screen, (30,30,30,210), self.dialog_box_rect)
                     pygame.draw.rect(self.screen, (200,200,200), self.dialog_box_rect, 2)
                     if 0 <= self.current_dialog_line_index < len(self.active_dialog):
                         draw_text(self.screen, self.active_dialog[self.current_dialog_line_index], self.dialog_font, (230,230,230), self.dialog_box_rect.inflate(-20,-20))
                     prompt_surf = self.dialog_font.render("E >", True, (180,180,180))
                     self.screen.blit(prompt_surf, (self.dialog_box_rect.right - prompt_surf.get_width()-10, self.dialog_box_rect.bottom - prompt_surf.get_height()-5))
-
+                if self.dialog_choice_active:
+                    self.draw_dialog_choice_prompt() # This will draw on top
+                
                 if self.state == "paused":
                     overlay = pygame.Surface((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
                     overlay.fill((0,0,0,150))
