@@ -121,6 +121,8 @@ class Game:
             "noze_cursed_jump_active": False,
             "hornhead_first_talk_done": False, # If you added this for Hornhead
         }
+        self.defeated_enemy_uids = set() # To track permanently defeated enemies
+        self.platforms = []
         self.npc_interaction_candidate = None # Reset candidate on game reset
         self.dialog_choice_active = False # Reset choice state
         if self.scenes_data:
@@ -171,7 +173,29 @@ class Game:
 
         enemy_default_w, enemy_default_h = 60, 60
         for enemy_def in scene_config.get('enemy_definitions', []):
-            self.enemies.append(Enemy(enemy_def['x'], enemy_def['y'], enemy_def.get('width', enemy_default_w), enemy_def.get('height', enemy_default_h), self.raw_enemy_images, attack_range=enemy_def.get('attack_range', 50), damage=enemy_def.get('damage', 1)))
+            enemy_uid = enemy_def.get('id') # Get the predefined unique ID
+
+            if not enemy_uid: # Fallback if no ID is defined in scene_config
+                # Create a dynamic (but less reliable for persistence if definitions change) ID
+                enemy_uid = f"{self.current_scene_id}_enemy_{enemy_def['x']}_{enemy_def['y']}_{enemy_def.get('type', 'unknown')}"
+                print(f"Warning: Enemy at ({enemy_def['x']},{enemy_def['y']}) in scene {self.current_scene_id} has no 'id'. Generated: {enemy_uid}")
+
+            if enemy_uid in self.defeated_enemy_uids:
+                print(f"Enemy {enemy_uid} already defeated. Not spawning.")
+                continue # Skip spawning this enemy
+
+            # Pass the enemy_uid to the Enemy constructor
+            self.enemies.append(Enemy(
+                enemy_def['x'], enemy_def['y'], 
+                enemy_def.get('width', enemy_default_w), 
+                enemy_def.get('height', enemy_default_h), 
+                self.raw_enemy_images, 
+                attack_range=enemy_def.get('attack_range', 50), 
+                damage=enemy_def.get('damage', 1),
+                enemy_uid=enemy_uid # Pass the UID here
+            ))
+        # for enemy_def in scene_config.get('enemy_definitions', []):
+        #     self.enemies.append(Enemy(enemy_def['x'], enemy_def['y'], enemy_def.get('width', enemy_default_w), enemy_def.get('height', enemy_default_h), self.raw_enemy_images, attack_range=enemy_def.get('attack_range', 50), damage=enemy_def.get('damage', 1)))
 
         self.dialog_choice_active = False # Reset choice state on any scene load
         self.camera.rect.center = self.player.rect.center
@@ -235,9 +259,17 @@ class Game:
                 
                 if conditions_met:
                     target_scene_id = transition['target_scene_id']
+                    target_player_pos_override = transition.get('target_player_pos') # GET OVERRIDE POS
+
                     print(f"Player triggered scene change to: {target_scene_id} via combined conditions.")
                     self.load_scene(target_scene_id)
-                    break
+
+                    if target_player_pos_override: # APPLY OVERRIDE POS if defined
+                        self.player.rect.topleft = target_player_pos_override
+                                # Ensure camera updates if player position changes drastically
+                        self.camera.update(self.player, self.current_world_width, self.current_world_height) 
+                        print(f"Player position set to: {target_player_pos_override} in new scene.")
+                    break # Exit loop once a transition is made
     
     def start_interaction(self, npc):
         self.interacting_npc = npc
@@ -441,7 +473,7 @@ class Game:
                         self.story_flags["noze_cursed_jump_active"] = False # Deactivate curse
 
                     break # Player can only be on one platform at a time like this
-                
+
                 elif self.player.velocity_y < 0 and \
                      (self.player.rect.top - self.player.velocity_y) >= platform.rect.bottom - 1 and \
                      self.player.rect.top <= platform.rect.bottom:
@@ -548,13 +580,27 @@ class Game:
                 
                 self.camera.update(self.player, self.current_world_width, self.current_world_height)
                 
-                for i_enemy in self.enemies[:]:
+                for i_enemy in self.enemies[:]: # Iterate over a copy for safe removal
                     if i_enemy.alive:
                         damage_val = i_enemy.update(dt_seconds, self.player.rect, self.platforms, current_game_time_seconds)
                         if damage_val > 0 and self.player.alive:
                             self.player.take_damage(damage_val)
-                            if not self.player.alive: self.state = "menu"
-                    else: self.enemies.remove(i_enemy)
+                            if not self.player.alive:
+                                print("Player died, returning to menu.")
+                                self.state = "menu"
+                                self.dialog_choice_active = False 
+                                self.active_dialog = [] 
+                                self.current_dialog_line_index = 0
+                                self.interacting_npc = None
+                                self.last_dialog_key_spoken_by_npc = None
+                                # Consider if player.jump_power needs reset here too, or if reset_game handles it
+                                # when "Play" is clicked next. Current reset_game handles it.
+                    else: # Enemy is not alive
+                        if i_enemy.uid and i_enemy.uid not in self.defeated_enemy_uids:
+                            self.defeated_enemy_uids.add(i_enemy.uid)
+                            print(f"Enemy {i_enemy.uid} permanently defeated and recorded.")
+
+                        self.enemies.remove(i_enemy) # Remove from active enemies list
                 
                 if self.jump_requested:
                     if self.player.on_ground and self.player.alive and not self.active_dialog:
@@ -565,8 +611,8 @@ class Game:
 
             self.screen.fill((10, 10, 10))
             if self.state == "menu":
-                if self.background_image_assets.get('main_bg'):
-                    self.screen.blit(pygame.transform.scale(self.background_image_assets['main_bg'], (self.WIDTH, self.HEIGHT)), (0,0))
+                if self.background_image_assets.get('home_screen'):
+                    self.screen.blit(pygame.transform.scale(self.background_image_assets['home_screen'], (self.WIDTH, self.HEIGHT)), (0,0)) #the last parameter
                 if self.start_button_img: self.screen.blit(self.start_button_img, self.start_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 - 40)))
                 if self.exit_button_img: self.screen.blit(self.exit_button_img, self.exit_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 + 40)))
             
