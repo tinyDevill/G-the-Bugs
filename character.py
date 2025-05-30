@@ -8,7 +8,7 @@ class Player:
         self.rect = pygame.Rect(x, y, width, height)
         self.speed = 200 # Pixels per second
 
-        self.default_jump_power = -13 # The normal jump power
+        self.default_jump_power = -15 # The normal jump power
         self.jump_power = self.default_jump_power # Current jump power, can be modified
         self.original_jump_power = self.default_jump_power # Store the initial jump_power for resetting
 
