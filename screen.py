@@ -4,18 +4,12 @@ import pygame
 class Camera:
     def __init__(self, width, height, zoom):
         self.rect = pygame.Rect(0, 0, width, height)
-        self.zoom = zoom # zoom factor (e.g., 1.0 = no zoom, 2.0 = zoomed in)
+        self.zoom = zoom 
 
     def update(self, target, world_width, world_height):
-        if target: # Ensure target exists
+        if target: 
             self.rect.center = target.rect.center
         
-        # Calculate camera view dimensions based on screen size and zoom
-        # Note: self.rect.width/height are the *world units* visible, not screen pixels.
-        # If self.rect.width/height were screen pixels, zoom would be applied at draw time.
-        # Here, self.rect.width/height are already "zoomed out" world view.
-
-        # Keep the camera within the bounds of the game world.
         self.rect.left = max(0, self.rect.left)
         self.rect.top = max(0, self.rect.top)
         
@@ -24,58 +18,100 @@ class Camera:
         if self.rect.bottom > world_height:
             self.rect.bottom = world_height
         
-        # Prevent camera view from being smaller than 1x1 pixel if possible
         if self.rect.width < 1: self.rect.width = 1
         if self.rect.height < 1: self.rect.height = 1
 
 
-def load_assets(screen_width_for_scaling, screen_height_for_scaling): # Parameters might be for default scaling
+def load_assets(screen_width_for_scaling, screen_height_for_scaling):
     assets = {}
     try:
-        
-        start_button_img = pygame.image.load("assets/image/start_button.png").convert_alpha()
-        assets['start_button_img'] = pygame.transform.scale(start_button_img, (200, 100))
-        exit_button_img = pygame.image.load("assets/image/exit_button.png").convert_alpha()
-        assets['exit_button_img'] = pygame.transform.scale(exit_button_img, (200, 100))
+        assets['start_button_img'] = pygame.transform.scale(pygame.image.load("assets/image/start_button.png").convert_alpha(), (200, 100))
+        assets['exit_button_img'] = pygame.transform.scale(pygame.image.load("assets/image/exit_button.png").convert_alpha(), (200, 100))
         assets['home_screen'] = pygame.image.load("assets/image/home_screen.png").convert_alpha()
         
-        assets['main_bg'] = pygame.image.load("assets/image/platform/pl2/bg2.png").convert()
-        assets['floor1_img'] = pygame.image.load("assets/image/platform/pl2/floor2_1.png").convert_alpha()
+        # Scene 1 Assets
+        assets['bg1'] = pygame.image.load("assets/image/platform/pl1/bg1.png").convert() # Assuming pl1 is your scene1 folder
+        assets['floor1_1'] = pygame.image.load("assets/image/platform/pl1/floor1_1.png").convert_alpha()
+        assets['floor1_2'] = pygame.image.load("assets/image/platform/pl1/floor1_2.png").convert_alpha()
+        assets['floor1_3'] = pygame.image.load("assets/image/platform/pl1/floor1_3.png").convert_alpha() # Corrected key
+        assets['floor1_4'] = pygame.image.load("assets/image/platform/pl1/floor1_4.png").convert_alpha()
+        assets['wall1'] = pygame.image.load("assets/image/platform/pl1/wall1.png").convert_alpha() # Assuming wall1 is the left wall
+        assets['truth_seeker_img'] = pygame.image.load("assets/image/truth_seeker.gif").convert_alpha() # Corrected path assuming .gif
+
+        # Scene 2 Assets (already partially there, consolidated)
+        assets['second_bg'] = pygame.image.load("assets/image/platform/pl2/bg2.png").convert() # Renamed from main_bg potentially
+        assets['floor1_img'] = pygame.image.load("assets/image/platform/pl2/floor2_1.png").convert_alpha() # This was your 'floor1_img' for scene 2
         assets['floor2_img'] = pygame.image.load("assets/image/platform/pl2/floor2_2.png").convert_alpha()
         assets['platform_img'] = pygame.image.load("assets/image/platform/pl2/platform2.png").convert_alpha()
         assets['benchbottom_img'] = pygame.image.load("assets/image/platform/pl2/benchbottom.png").convert_alpha()
         assets['benchside2_1_img'] = pygame.image.load("assets/image/platform/pl2/benchside2_1.png").convert_alpha()
         assets['benchside2_2_img'] = pygame.image.load("assets/image/platform/pl2/benchside2_2.png").convert_alpha()
-        assets['wall_img'] = pygame.image.load("assets/image/platform/pl2/wall2_1.png").convert_alpha()
-        
-        assets['truth_seeker_img'] = pygame.image.load("assets/image/truth_seeker.gif").convert_alpha()
-    
-        # Load other assets and add them to the dictionary
-        assets['steelsoul_img'] = pygame.image.load("assets/image/steelsoul.png").convert_alpha()
+        assets['wall_img'] = pygame.image.load("assets/image/platform/pl2/wall2_1.png").convert_alpha()   
+        assets['steelsoul_img'] = pygame.image.load("assets/image/steelsoul.png").convert_alpha() # Assuming steelsoul is a character or item in scene 2
+
+        # Scene 3 Assets
+        assets['bg3'] = pygame.transform.scale(pygame.image.load("assets/image/platform/pl3/bg3.png").convert(), (1600, screen_height_for_scaling))
+        assets['floor3_1'] = pygame.image.load("assets/image/platform/pl3/floor3_1.png").convert_alpha()
+        assets['floor3_2'] = pygame.image.load("assets/image/platform/pl3/floor3_2.png").convert_alpha()
+        assets['upfloor3_1'] = pygame.image.load("assets/image/platform/pl3/upfloor3_1.png").convert_alpha()
+        assets['upfloor3_2'] = pygame.image.load("assets/image/platform/pl3/upfloor3_2.png").convert_alpha()
+        assets['upfloor3_3'] = pygame.image.load("assets/image/platform/pl3/upfloor3_3.png").convert_alpha()
+        assets['upfloor3_4'] = pygame.image.load("assets/image/platform/pl3/upfloor3_4.png").convert_alpha()
+        assets['upfloor3_5'] = pygame.image.load("assets/image/platform/pl3/upfloor3_5.png").convert_alpha()
+        assets['upfloor3_6'] = pygame.image.load("assets/image/platform/pl3/upfloor3_6.png").convert_alpha()
+        assets['floatfloor3'] = pygame.image.load("assets/image/platform/pl3/floatfloor3.png").convert_alpha()
+        assets['wall3'] = pygame.image.load("assets/image/platform/pl3/wall3.png").convert_alpha()
         assets['noze_img'] = pygame.image.load("assets/image/noze.png").convert_alpha()
-        cave_bg_temp = pygame.image.load("assets/image/platform/pl3/bg3.png").convert()
-        assets['cave_bg'] = pygame.transform.scale(cave_bg_temp, (1600, screen_height_for_scaling)) # Example scale
-        assets['hornhead_img'] = pygame.image.load("assets/image/Hornhead.png").convert_alpha()  # EXAMPLE PATH
-        assets['witcher_img'] = pygame.image.load("assets/image/witcher.png").convert_alpha()    # EXAMPLE PATH
+        
+        # Scene 4 Assets
+        assets['bg4'] = pygame.image.load("assets/image/platform/pl4/bg4.png").convert()
+        assets['floor4_1'] = pygame.image.load("assets/image/platform/pl4/floor4_1.png").convert_alpha()
+        assets['floor4_2'] = pygame.image.load("assets/image/platform/pl4/floor4_2.png").convert_alpha()
+        assets['floor4_3'] = pygame.image.load("assets/image/platform/pl4/floor4_3.png").convert_alpha()
+        assets['wall4_1'] = pygame.image.load("assets/image/platform/pl4/wall4_1.png").convert_alpha()
+        assets['wall4_2'] = pygame.image.load("assets/image/platform/pl4/wall4_2.png").convert_alpha()
+        assets['hornhead_img'] = pygame.image.load("assets/image/Hornhead.png").convert_alpha() 
+
+        # Scene 5 Assets
+        assets['bg5'] = pygame.image.load("assets/image/platform/pl5/bg5.png").convert()
+        assets['floor5_1'] = pygame.image.load("assets/image/platform/pl5/floor5_1.png").convert_alpha()
+        assets['floor5_2'] = pygame.image.load("assets/image/platform/pl5/floor5_2.png").convert_alpha()
+        assets['wall5_1'] = pygame.image.load("assets/image/platform/pl5/wall5_1.png").convert_alpha()
+        assets['wall5_2'] = pygame.image.load("assets/image/platform/pl5/wall5_2.png").convert_alpha()
+
+        # Witcher Assets
+        assets['witcher_img'] = pygame.image.load("assets/image/witcher1.png").convert_alpha()
+        assets['witcher2_img'] = pygame.image.load("assets/image/witcher2.png").convert_alpha() # New Witcher frame
+        assets['bullet_img'] = pygame.image.load("assets/image/bullet.png").convert_alpha()   # New Bullet
+
+        # General Backgrounds (if still used or as fallbacks) - some might be redundant now
+        assets['main_bg'] = assets.get('second_bg') # Default main_bg to scene 2 bg for now
+        # assets['forest_bg'] = pygame.image.load("assets/image/platform/forest_bg.png").convert_alpha() # Example path
+        # assets['mountain_bg'] = pygame.image.load("assets/image/platform/mountain_bg.png").convert_alpha() # Example path
+        # assets['ruins_bg'] = pygame.image.load("assets/image/platform/ruins_bg.png").convert_alpha() # Example path
 
 
     except pygame.error as e:
         print(f"Error loading an asset in screen.py: {e}")
-        # You might want to fill missing assets with placeholder surfaces
-        placeholder_surface = pygame.Surface((50,50)); placeholder_surface.fill((255,0,255)) # Magenta
-        keys_to_check = [
-            'main_bg', 'floor1_img', 'floor2_img', 'platform_img', 
-            'benchbottom_img', 'benchside2_1_img', 'benchside2_2_img', 'wall_img',
-            'start_button_img', 'exit_button_img', 'home_screen', # Added home_screen
-            'truth_seeker_img', 'steelsoul_img', 'noze_img', 
-            'hornhead_img', 'witcher_img', # Added new NPC images
-            'cave_bg', 'forest_bg', 'mountain_bg', 'ruins_bg' # Added new backgrounds
-        ]
-        for key in keys_to_check:
-            if key not in assets:
-                assets[key] = placeholder_surface
-                print(f"Using placeholder for missing asset: {key}")
-
+    
+    placeholder_surface = pygame.Surface((50,50)); placeholder_surface.fill((255,0,255)) # Magenta
+    keys_to_check = [
+        'start_button_img', 'exit_button_img', 'home_screen',
+        'bg1', 'floor1_1', 'floor1_2', 'floor1_3', 'floor1_4', # scene 1
+        'second_bg', 'floor1_img', 'floor2_img', 'platform_img', # scene 2 (using existing names)
+        'benchbottom_img', 'benchside2_1_img', 'benchside2_2_img', 'wall_img',
+        'truth_seeker_img', 'steelsoul_img', 'noze_img', 'hornhead_img', 
+        'bg3', 'floor3_1', 'floor3_2', 'upfloor3_1', 'upfloor3_2', 'upfloor3_3', 'upfloor3_4', # scene 3
+        'upfloor3_5', 'upfloor3_6', 'floatfloor3', 'wall3',
+        'bg4', 'floor4_1', 'floor4_2', 'floor4_3', 'wall4_1', 'wall4_2', # scene 4
+        'bg5', 'floor5_1', 'floor5_2', 'wall5_1', 'wall5_2', # scene 5
+        'witcher_img', 'witcher2_img', 'bullet_img', # witcher
+        'main_bg', 'forest_bg', 'mountain_bg', 'ruins_bg' # general backgrounds
+    ]
+    for key in keys_to_check:
+        if key not in assets:
+            assets[key] = placeholder_surface
+            print(f"Using placeholder for missing asset: {key}")
     return assets
 
 def draw_background_scaled_with_camera(screen, background_surface, camera_world_view_rect, screen_render_width, screen_render_height):
@@ -123,17 +159,21 @@ def draw_background_scaled_with_camera(screen, background_surface, camera_world_
         print(f"  Clamped_view_rect: {clamped_view_rect}")
         # screen.fill((25,0,0)) # Fallback color to indicate an error
 
-def draw_objects(screen, player, platforms, npcs, enemies_list, camera_rect, zoom): # Added enemies_list
+def draw_objects(screen, player, platforms, npcs, enemies_list, projectiles_list, camera_rect, zoom): # Added projectiles_list
     for platform in platforms:
         platform.draw(screen, camera_rect, zoom)
     
-    for npc in npcs: # NPCs are already filtered by scene loading
-        if npc.active: 
-            npc.draw(screen, camera_rect, zoom)
+    for npc_instance in npcs: 
+        if npc_instance.active: 
+            npc_instance.draw(screen, camera_rect, zoom)
 
-    for enemy in enemies_list: # Draw all enemies from the list
+    for enemy in enemies_list: 
         if enemy.alive:
             enemy.draw(screen, camera_rect, zoom)
+
+    for projectile in projectiles_list: # DRAW PROJECTILES
+        if projectile.alive:
+            projectile.draw(screen, camera_rect, zoom)
 
     if player and player.alive:
         player.draw(screen, camera_rect, zoom)
