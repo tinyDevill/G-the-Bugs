@@ -15,7 +15,7 @@ class Player:
         self.jump_power = -13 # Keep as instantaneous velocity change
         self.velocity_y = 0
         self.on_ground = False
-        self.health = 3
+        self.health = 100
         self.max_health = 3
         self.facing = "right"
         self.is_attacking = False
