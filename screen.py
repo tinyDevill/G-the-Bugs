@@ -80,8 +80,8 @@ def load_assets(screen_width_for_scaling, screen_height_for_scaling):
         assets['wall5_2'] = pygame.image.load("assets/image/platform/pl5/wall5_2.png").convert_alpha()
 
         # Witcher Assets
-        assets['witcher_img'] = pygame.image.load("assets/image/witcher1.png").convert_alpha()
-        assets['witcher2_img'] = pygame.image.load("assets/image/witcher2.png").convert_alpha() # New Witcher frame
+        assets['witcher_img'] = pygame.image.load("assets/image/boss1.png").convert_alpha()
+        assets['witcher2_img'] = pygame.image.load("assets/image/boss2.png").convert_alpha() # New Witcher frame
         assets['bullet_img'] = pygame.image.load("assets/image/bullet.png").convert_alpha()   # New Bullet
 
         # General Backgrounds (if still used or as fallbacks) - some might be redundant now
