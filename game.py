@@ -94,12 +94,12 @@ class Game:
             'witcher': witcher_dialogs,    
         }
         self.raw_enemy_images = { # For standard enemies
-            'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
-            'walk1': pygame.image.load("assets/image/enemy_walk1.png").convert_alpha(),
-            'walk2': pygame.image.load("assets/image/enemy_walk2.png").convert_alpha(),
-            'attack1': pygame.image.load("assets/image/enemy_attack1.png").convert_alpha(),
-            'attack2': pygame.image.load("assets/image/enemy_attack2.png").convert_alpha(),
-            'attack3': pygame.image.load("assets/image/enemy_attack3.png").convert_alpha()
+            'idle': pygame.image.load("assets/image/mob1_1.png").convert_alpha(),
+            'walk1': pygame.image.load("assets/image/mob1_1.png").convert_alpha(),
+            'walk2': pygame.image.load("assets/image/mob1_2.png").convert_alpha(),
+            'attack1': pygame.image.load("assets/image/mob1_1.png").convert_alpha(),
+            'attack2': pygame.image.load("assets/image/mob1_2.png").convert_alpha(),
+            'attack3': pygame.image.load("assets/image/mob1_2.png").convert_alpha()
         }
         self.start_button_img = self.loaded_assets.get('start_button_img')
         self.exit_button_img = self.loaded_assets.get('exit_button_img')
