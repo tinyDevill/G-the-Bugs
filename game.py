@@ -2,16 +2,17 @@
 import pygame
 import sys
 import math
+import random # If not already imported
 
-from npc import NPC, truth_seeker_dialogs, steelsoul_dialogs, noze_dialogs, hornhead_dialogs , witcher_dialogs
+# Import WitcherNPC along with NPC
+from npc import NPC, WitcherNPC, truth_seeker_dialogs, steelsoul_dialogs, noze_dialogs, hornhead_dialogs, witcher_dialogs
 from character import Player
 from enemy import Enemy
-from gameobject import Platform, Animation, create_platforms_for_level
+from gameobject import Platform, Animation, Projectile, create_platforms_for_level # Added Projectile
 from screen import (load_assets, Camera, draw_background_scaled_with_camera, draw_objects,
                     draw_darkness_with_light, draw_text)
 
-# Import the scene configuration
-from scene_config import SCENES_DATA, SCENE_ID_SHRINE_START # Import your scene IDs
+from scene_config import SCENES_DATA, SCENE_ID_SCENE1, SCENE_ID_SCENE2, SCENE_ID_SCENE3, SCENE_ID_SCENE4, SCENE_ID_SCENE5
 
 class Game:
     def __init__(self):
@@ -22,45 +23,77 @@ class Game:
 
         self.clock = pygame.time.Clock()
         self.FPS = 60
-        self.zoom = 1
+        self.zoom = 1 
         self.font = pygame.font.Font(None, 36)
         self.dialog_font = pygame.font.Font(None, 28)
-        self.interaction_prompt_font = pygame.font.Font(None, 22) # Font for "[E] Interact"
+        self.interaction_prompt_font = pygame.font.Font(None, 22)
 
-        # --- Asset Loading and Storage ---
         self.loaded_assets = load_assets(self.WIDTH, self.HEIGHT)
 
         self.platform_image_assets = {
-            'floor1_img': self.loaded_assets.get('floor1_img'),
-            'floor2_img': self.loaded_assets.get('floor2_img'),
-            'platform_img': self.loaded_assets.get('platform_img'),
+            'floor1_img': self.loaded_assets.get('floor1_img'),      # From scene 2 def
+            'floor2_img': self.loaded_assets.get('floor2_img'),      # From scene 2 def
+            'platform_img': self.loaded_assets.get('platform_img'),  # From scene 2 def
             'benchbottom_img': self.loaded_assets.get('benchbottom_img'),
             'benchside2_1_img': self.loaded_assets.get('benchside2_1_img'),
             'benchside2_2_img': self.loaded_assets.get('benchside2_2_img'),
-            'wall_img': self.loaded_assets.get('wall_img'),
+            'wall_img': self.loaded_assets.get('wall_img'),          # From scene 2 def
+
+            # Scene 1
+            'floor1_1': self.loaded_assets.get('floor1_1'),
+            'floor1_2': self.loaded_assets.get('floor1_2'),
+            'floor1_3': self.loaded_assets.get('floor1_3'),
+            'floor1_4': self.loaded_assets.get('floor1_4'),
+            'wall1': self.loaded_assets.get('wall1'),
+            # Scene 3
+            'floor3_1': self.loaded_assets.get('floor3_1'),
+            'floor3_2': self.loaded_assets.get('floor3_2'),
+            'upfloor3_1': self.loaded_assets.get('upfloor3_1'),
+            'upfloor3_2': self.loaded_assets.get('upfloor3_2'),
+            'upfloor3_3': self.loaded_assets.get('upfloor3_3'),
+            'upfloor3_4': self.loaded_assets.get('upfloor3_4'),
+            'upfloor3_5': self.loaded_assets.get('upfloor3_5'),
+            'upfloor3_6': self.loaded_assets.get('upfloor3_6'),
+            'floatfloor3': self.loaded_assets.get('floatfloor3'),
+            'wall3': self.loaded_assets.get('wall3'),
+            # Scene 4
+            'floor4_1': self.loaded_assets.get('floor4_1'),
+            'floor4_2': self.loaded_assets.get('floor4_2'),
+            'floor4_3': self.loaded_assets.get('floor4_3'),
+            'wall4_1': self.loaded_assets.get('wall4_1'),
+            'wall4_2': self.loaded_assets.get('wall4_2'),
+            # Scene 5
+            'floor5_1': self.loaded_assets.get('floor5_1'),
+            'floor5_2': self.loaded_assets.get('floor5_2'),
+            'wall5_1': self.loaded_assets.get('wall5_1'),
+            'wall5_2': self.loaded_assets.get('wall5_2'),
         }
         self.npc_image_assets = {
             'truth_seeker': self.loaded_assets.get('truth_seeker_img'),
             'steelsoul': self.loaded_assets.get('steelsoul_img'),
             'noze_img': self.loaded_assets.get('noze_img'),
-            'hornhead_img': self.loaded_assets.get('hornhead_img'),         # ADD NEW (ensure 'hermit_img' key in load_assets)
-            'witcher_img': self.loaded_assets.get('witcher_img'),       # ADD NEW
+            'hornhead_img': self.loaded_assets.get('hornhead_img'),
+            'witcher_img': self.loaded_assets.get('witcher_img'), # Base image for Witcher
+            # Add witcher2 and bullet if they are treated as NPC assets, or handle separately
+            'witcher2_img': self.loaded_assets.get('witcher2_img'),
+            'bullet_img': self.loaded_assets.get('bullet_img')
         }
         self.background_image_assets = {
-            'main_bg': self.loaded_assets.get('main_bg'),
-            'cave_bg': self.loaded_assets.get('cave_bg'),
-            'forest_bg': self.loaded_assets.get('forest_bg'),       # ADD NEW
-            'mountain_bg': self.loaded_assets.get('mountain_bg'),   # ADD NEW
-            'ruins_bg': self.loaded_assets.get('ruins_bg'),         # ADD NEW
+            'main_bg': self.loaded_assets.get('main_bg'), # Fallback or default
+            'bg1': self.loaded_assets.get('bg1'), # Scene 1 BG
+            'bg3': self.loaded_assets.get('bg3'), # Scene 3 BG
+            'bg4': self.loaded_assets.get('bg4'), # Scene 4 BG
+            'bg5': self.loaded_assets.get('bg5'), # Scene 5 BG
+            'second_bg': self.loaded_assets.get('second_bg'), # Scene 2 BG
         }
         self.all_npc_dialogs = {
             'truth_seeker': truth_seeker_dialogs,
             'steelsoul': steelsoul_dialogs,
             'noze': noze_dialogs,
             'hornhead': hornhead_dialogs,    
-            'witcher': witcher_dialogs,     
+            'witcher': witcher_dialogs,    
         }
-        self.raw_enemy_images = {
+        self.raw_enemy_images = { # For standard enemies
             'idle': pygame.image.load("assets/image/enemy_idle.png").convert_alpha(),
             'walk1': pygame.image.load("assets/image/enemy_walk1.png").convert_alpha(),
             'walk2': pygame.image.load("assets/image/enemy_walk2.png").convert_alpha(),
@@ -79,8 +112,9 @@ class Game:
         self.platforms = []
         self.npcs = []
         self.enemies = []
+        self.projectiles = [] # NEW list for projectiles
 
-        self.player = Player(0, 0, 40, 50)
+        self.player = Player(0, 0, 40, 50) # Dimensions might need adjustment based on player art
         self.camera = Camera(int(self.WIDTH / self.zoom), int(self.HEIGHT / self.zoom), self.zoom)
 
         self.state = "menu"
@@ -91,25 +125,21 @@ class Game:
         self.active_dialog = []
         self.current_dialog_line_index = 0
         self.dialog_box_rect = pygame.Rect(50, self.HEIGHT - 110, self.WIDTH - 100, 90)
-        
-        self.npc_interaction_candidate = None # Stores NPC if player is close enough to interact
-
-        # atrubutes for dialog choice system
-        self.dialog_choice_active = False  # True when a Yes/No prompt is shown
-        self.dialog_choice_prompt_text = "" # The question text (e.g., "Do you want to take the thing?")
-        self.dialog_choice_options = []    # List of option strings (e.g., ["Yes", "No"])
-        self.dialog_choice_selected_index = 0 # Index of the currently highlighted option
-        self.dialog_choice_callback = None # Function to call when a choice is made
-        self.dialog_choice_rect = pygame.Rect(0, 0, 0, 0) # Visual bounding box for the prompt
-        self.choice_option_rects = [] # To store rects of "Yes", "No" for mouse clicks
+        self.npc_interaction_candidate = None
+        self.dialog_choice_active = False
+        self.dialog_choice_prompt_text = ""
+        self.dialog_choice_options = []
+        self.dialog_choice_selected_index = 0
+        self.dialog_choice_callback = None
+        self.dialog_choice_rect = pygame.Rect(0, 0, 0, 0)
+        self.choice_option_rects = []
 
         self.reset_game()
 
     def reset_game(self):
         self.player.health = self.player.max_health
         self.player.alive = True
-        # Reset player's jump power to original in case it was modified
-        self.player.jump_power = self.player.original_jump_power # ADD THIS LINE
+        self.player.jump_power = self.player.original_jump_power 
         self.player.time_since_last_damage = 0.0
         self.player.time_accumulated_for_heal_tick = 0.0
         self.player_data = {"geo": 0, "inventory": []}
@@ -117,17 +147,20 @@ class Game:
             "truth_seeker_initial_talk_done": False,
             "truth_seeker_quest_accepted": False,
             "void_heart_obtained": False,
-            "noze_item_accepted": False,      # ADDED: Player accepted Noze's item
-            "noze_item_declined": False,      # ADDED: Player declined Noze's item
+            "noze_item_accepted": False,    
+            "noze_item_declined": False,    
             "noze_cursed_jump_active": False,
-            "hornhead_first_talk_done": False, # If you added this for Hornhead
+            "hornhead_first_talk_done": False, 
         }
-        self.defeated_enemy_uids = set() # To track permanently defeated enemies
-        self.platforms = []
-        self.npc_interaction_candidate = None # Reset candidate on game reset
-        self.dialog_choice_active = False # Reset choice state
+        self.defeated_enemy_uids = set() 
+        self.platforms.clear()
+        self.npcs.clear() # Clear NPCs
+        self.enemies.clear() # Clear enemies
+        self.projectiles.clear() # Clear projectiles
+        self.npc_interaction_candidate = None 
+        self.dialog_choice_active = False 
         if self.scenes_data:
-            self.load_scene(SCENE_ID_SHRINE_START)
+            self.load_scene(SCENE_ID_SCENE1) # Load the first scene by default
         else:
             print("CRITICAL ERROR: No scenes defined in scenes_data. Cannot start game.")
             pygame.quit()
@@ -138,6 +171,7 @@ class Game:
 
         if not scene_config:
             print(f"CRITICAL Error: Scene with ID '{scene_id_to_load}' not found.")
+            # ... (error handling as before)
             if not self.current_scene_id and self.scenes_data:
                 print("Attempting to load first defined scene as emergency fallback.")
                 scene_config = self.scenes_data[0]
@@ -145,47 +179,65 @@ class Game:
                 pygame.quit()
                 sys.exit(f"Failed to load scene: {scene_id_to_load}")
 
+
         print(f"Loading scene: {scene_config['id']}")
         self.current_scene_id = scene_config['id']
-        self.current_background = self.background_image_assets.get(scene_config['background_key'], self.background_image_assets.get('main_bg'))
-        self.current_world_width, self.current_world_height = scene_config.get('world_dimensions', (self.WIDTH, self.HEIGHT))
+        # Use scene-specific background key, fallback to a generic one if needed
+        self.current_background = self.background_image_assets.get(scene_config.get('background_key'), 
+                                                                  self.background_image_assets.get('main_bg'))
+        self.current_world_width, self.current_world_height = scene_config.get('world_dimensions', (self.WIDTH * 2, self.HEIGHT)) # Example larger world
         self.player.rect.topleft = scene_config['player_start_pos']
         self.player.velocity_y = 0
         self.player.on_ground = False
+        
         self.platforms.clear()
         self.npcs.clear()
         self.enemies.clear()
-        self.npc_interaction_candidate = None # Reset candidate on scene load
+        self.projectiles.clear() # Clear projectiles on scene load
+        self.npc_interaction_candidate = None
 
         self.platforms = create_platforms_for_level(scene_config.get('platform_definitions', []), self.platform_image_assets)
 
-        npc_default_w, npc_default_h = 50, 70
+        npc_default_w, npc_default_h = 50, 70 # Adjust as needed
         for npc_def in scene_config.get('npc_definitions', []):
             required_flag = npc_def.get('appears_if_flag_true')
             if required_flag and not self.story_flags.get(required_flag, False):
                 continue
+            
             name = npc_def['name']
             dialogs = self.all_npc_dialogs.get(name)
             image = self.npc_image_assets.get(npc_def['image_key'])
+            
             if dialogs and image:
-                self.npcs.append(NPC(npc_def['x'], npc_def['y'], npc_def.get('width', npc_default_w), npc_def.get('height', npc_default_h), name, dialogs, image))
+                if name == 'witcher': # Special instantiation for Witcher
+                    witcher_img2 = self.npc_image_assets.get('witcher2_img')
+                    bullet_img = self.npc_image_assets.get('bullet_img')
+                    if witcher_img2 and bullet_img:
+                        self.npcs.append(WitcherNPC(npc_def['x'], npc_def['y'], 
+                                                    npc_def.get('width', npc_default_w), 
+                                                    npc_def.get('height', npc_default_h), 
+                                                    name, dialogs, image, 
+                                                    witcher_img2, bullet_img, self)) # Pass game_ref=self
+                    else:
+                        print(f"WitcherNPC Load Warning: Missing witcher2_img or bullet_img for {name}")
+                else: # Standard NPC
+                    self.npcs.append(NPC(npc_def['x'], npc_def['y'], 
+                                         npc_def.get('width', npc_default_w), 
+                                         npc_def.get('height', npc_default_h), 
+                                         name, dialogs, image))
             else:
                 print(f"NPC Load Warning: Missing dialogs or image for {name} (key: {npc_def['image_key']})")
-
+        
+        # ... (enemy loading remains the same)
         enemy_default_w, enemy_default_h = 60, 60
         for enemy_def in scene_config.get('enemy_definitions', []):
-            enemy_uid = enemy_def.get('id') # Get the predefined unique ID
-
-            if not enemy_uid: # Fallback if no ID is defined in scene_config
-                # Create a dynamic (but less reliable for persistence if definitions change) ID
+            enemy_uid = enemy_def.get('id') 
+            if not enemy_uid: 
                 enemy_uid = f"{self.current_scene_id}_enemy_{enemy_def['x']}_{enemy_def['y']}_{enemy_def.get('type', 'unknown')}"
                 print(f"Warning: Enemy at ({enemy_def['x']},{enemy_def['y']}) in scene {self.current_scene_id} has no 'id'. Generated: {enemy_uid}")
-
             if enemy_uid in self.defeated_enemy_uids:
                 print(f"Enemy {enemy_uid} already defeated. Not spawning.")
-                continue # Skip spawning this enemy
-
-            # Pass the enemy_uid to the Enemy constructor
+                continue 
             self.enemies.append(Enemy(
                 enemy_def['x'], enemy_def['y'], 
                 enemy_def.get('width', enemy_default_w), 
@@ -193,13 +245,12 @@ class Game:
                 self.raw_enemy_images, 
                 attack_range=enemy_def.get('attack_range', 50), 
                 damage=enemy_def.get('damage', 1),
-                enemy_uid=enemy_uid # Pass the UID here
+                enemy_uid=enemy_uid 
             ))
-        # for enemy_def in scene_config.get('enemy_definitions', []):
-        #     self.enemies.append(Enemy(enemy_def['x'], enemy_def['y'], enemy_def.get('width', enemy_default_w), enemy_def.get('height', enemy_default_h), self.raw_enemy_images, attack_range=enemy_def.get('attack_range', 50), damage=enemy_def.get('damage', 1)))
 
-        self.dialog_choice_active = False # Reset choice state on any scene load
-        self.camera.rect.center = self.player.rect.center
+        self.dialog_choice_active = False 
+        self.camera.rect.center = self.player.rect.center # Initial camera position
+        self.camera.update(self.player, self.current_world_width, self.current_world_height) # Ensure bounds
         self.light_angle = 0
         self.interacting_npc = None
         self.active_dialog = []
@@ -504,38 +555,37 @@ class Game:
             dt_seconds = self.clock.tick(self.FPS) / 1000.0
             current_game_time_seconds += dt_seconds
 
+            # --- Event Handling ---
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: running = False
+                
+                # Dialog choice input handling (should take precedence)
                 if self.dialog_choice_active:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_UP or event.key == pygame.K_w:
                             self.dialog_choice_selected_index = (self.dialog_choice_selected_index - 1 + len(self.dialog_choice_options)) % len(self.dialog_choice_options)
                         elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                             self.dialog_choice_selected_index = (self.dialog_choice_selected_index + 1) % len(self.dialog_choice_options)
-                        elif event.key == pygame.K_RETURN or event.key == pygame.K_e: # Confirm choice
+                        elif event.key == pygame.K_RETURN or event.key == pygame.K_e: 
                             if self.dialog_choice_callback:
                                 self.dialog_choice_callback(self.dialog_choice_selected_index)
-                        # Optional: Allow Esc to cancel/default to "No"
-                        # elif event.key == pygame.K_ESCAPE:
-                        #     self.handle_noze_item_choice(1) # Assuming index 1 is "No"
                     elif event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1: # Left mouse button
+                        if event.button == 1: 
                             mouse_pos = event.pos
                             for i, option_rect in enumerate(self.choice_option_rects):
                                 if option_rect.collidepoint(mouse_pos):
-                                    self.dialog_choice_selected_index = i # Visually select
+                                    self.dialog_choice_selected_index = i 
                                     if self.dialog_choice_callback:
-                                        self.dialog_choice_callback(self.dialog_choice_selected_index) # Process choice
+                                        self.dialog_choice_callback(self.dialog_choice_selected_index)
                                     break 
-
-                # If dialog choice is active, generally consume other inputs for this frame
-                # to prevent them from affecting the game underneath.
-                # However, QUIT should always work.
-                    if event.type != pygame.QUIT:
-                        continue # Skip further event processing for this event if choice is active
+                    if event.type != pygame.QUIT : # Consume event if choice is active
+                        continue # Skip other event processing for this event
+                
+                # Regular event handling if not in dialog choice
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event.pos
                     if self.state == "menu":
+                        # ... (menu button logic remains the same)
                         play_rect_center_x = self.WIDTH // 2
                         play_rect_center_y = self.HEIGHT // 2 - 40
                         play_rect = self.start_button_img.get_rect(center=(play_rect_center_x, play_rect_center_y)) if self.start_button_img else pygame.Rect(play_rect_center_x - 100, play_rect_center_y - 25, 200, 50)
@@ -545,7 +595,7 @@ class Game:
                             self.state = "playing"
                             self.reset_game()
                         elif exit_rect.collidepoint(mouse_pos): running = False
-                
+
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         if self.state == "playing": self.state = "paused"
@@ -553,14 +603,15 @@ class Game:
                     
                     if self.state == "playing":
                         if event.key == pygame.K_SPACE: self.jump_requested = True
-                        if event.key == pygame.K_e: # Interaction key
-                            if self.active_dialog: # If dialog is active, advance it
+                        if event.key == pygame.K_e: 
+                            if self.active_dialog: 
                                 self.advance_dialog()
-                            elif self.npc_interaction_candidate: # Else, if an NPC is targeted for interaction
+                            elif self.npc_interaction_candidate: 
                                 self.start_interaction(self.npc_interaction_candidate)
                         
                         # Temp Scene Switchers
                         if self.scenes_data:
+                            # ... (scene switcher logic remains same)
                             current_scene_index = next((i for i, s_data in enumerate(self.scenes_data) if s_data['id'] == self.current_scene_id), -1)
                             if current_scene_index != -1:
                                 if event.key == pygame.K_PAGEUP:
@@ -568,20 +619,28 @@ class Game:
                                 if event.key == pygame.K_PAGEDOWN:
                                     self.load_scene(self.scenes_data[(current_scene_index + 1) % len(self.scenes_data)]['id'])
             
+            # --- Game State Updates ---
             if self.state == "playing":
-                if not self.player.alive: self.state = "menu"
+                if not self.player.alive: self.state = "menu" # Check for player death
                 
-                self.update_npc_interaction_candidate() # Update which NPC can be interacted with
-                self.handle_input() # Handles player movement input and attack input
+                self.update_npc_interaction_candidate() 
+                self.handle_input() # Player movement and attack input
                 
                 if self.player.alive:
-                    self.player.update(dt_seconds, self.enemies)
+                    self.player.update(dt_seconds, self.enemies) # Player update, including attack checks
                     self.player.apply_gravity()
-                    self.check_vertical_collisions()
+                    self.check_vertical_collisions() # Player vertical collisions
                 
                 self.camera.update(self.player, self.current_world_width, self.current_world_height)
                 
-                for i_enemy in self.enemies[:]: # Iterate over a copy for safe removal
+                # Update NPCs (including Witcher's special behavior)
+                for npc_instance in self.npcs:
+                    if isinstance(npc_instance, WitcherNPC):
+                        npc_instance.update_behavior(dt_seconds, self.player.rect, self.platforms)
+                    # Add other general NPC update logic here if needed (e.g., animations, simple movements)
+
+                # Update Enemies
+                for i_enemy in self.enemies[:]: 
                     if i_enemy.alive:
                         damage_val = i_enemy.update(dt_seconds, self.player.rect, self.platforms, current_game_time_seconds)
                         if damage_val > 0 and self.player.alive:
@@ -589,84 +648,96 @@ class Game:
                             if not self.player.alive:
                                 print("Player died, returning to menu.")
                                 self.state = "menu"
+                                # Reset dialog/interaction states on player death
                                 self.dialog_choice_active = False 
                                 self.active_dialog = [] 
                                 self.current_dialog_line_index = 0
                                 self.interacting_npc = None
                                 self.last_dialog_key_spoken_by_npc = None
-                                # Consider if player.jump_power needs reset here too, or if reset_game handles it
-                                # when "Play" is clicked next. Current reset_game handles it.
-                    else: # Enemy is not alive
+                                break # Stop processing enemies if player died
+                    else: 
                         if i_enemy.uid and i_enemy.uid not in self.defeated_enemy_uids:
                             self.defeated_enemy_uids.add(i_enemy.uid)
                             print(f"Enemy {i_enemy.uid} permanently defeated and recorded.")
-
-                        self.enemies.remove(i_enemy) # Remove from active enemies list
+                        self.enemies.remove(i_enemy) 
                 
+                # Update Projectiles & Check Collisions
+                for proj in self.projectiles[:]:
+                    if proj.alive:
+                        proj.update(dt_seconds)
+                        if self.player.alive and proj.rect.colliderect(self.player.rect):
+                            self.player.take_damage(proj.damage)
+                            proj.alive = False # Projectile hits once
+                            if not self.player.alive:
+                                print("Player died from projectile, returning to menu.")
+                                self.state = "menu" 
+                                # Reset dialog/interaction states
+                                self.dialog_choice_active = False; self.active_dialog = []; # etc.
+                                break # Stop processing projectiles if player died
+                    if not proj.alive:
+                        self.projectiles.remove(proj)
+
                 if self.jump_requested:
                     if self.player.on_ground and self.player.alive and not self.active_dialog:
                         self.player.jump()
                     self.jump_requested = False
                 
-                self.check_scene_location_triggers()
+                if self.state == "playing": # Re-check as player might have died
+                    self.check_scene_location_triggers()
 
-            self.screen.fill((10, 10, 10))
+            # --- Drawing ---
+            self.screen.fill((10, 10, 10)) # Default dark background
             if self.state == "menu":
-                if self.home_screen_img: # Check if home_screen_img was loaded
+                # ... (menu drawing remains the same)
+                if self.home_screen_img: 
                     self.screen.blit(pygame.transform.scale(self.home_screen_img, (self.WIDTH, self.HEIGHT)), (0,0))
-                elif self.background_image_assets.get('main_bg'): # Fallback to main_bg if home_screen not available
+                elif self.background_image_assets.get('main_bg'): 
                     self.screen.blit(pygame.transform.scale(self.background_image_assets['main_bg'], (self.WIDTH, self.HEIGHT)), (0,0))
-                else: # Absolute fallback: a solid color
-                    self.screen.fill((30, 30, 70)) # E.g., a dark blue
+                else: 
+                    self.screen.fill((30, 30, 70)) 
 
-                # Draw menu buttons on top of the background
                 if self.start_button_img: 
                     self.screen.blit(self.start_button_img, self.start_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 - 40)))
                 if self.exit_button_img: 
                     self.screen.blit(self.exit_button_img, self.exit_button_img.get_rect(center=(self.WIDTH//2, self.HEIGHT//2 + 40)))
             
-            
             elif self.state == "playing" or self.state == "paused":
+                # Use the new draw_background_scaled_with_camera if you want parallax/zoomable backgrounds
+                # For now, using simple scaled background
                 if self.current_background:
+                    # Simple scaling:
                     self.screen.blit(pygame.transform.scale(self.current_background, (self.WIDTH, self.HEIGHT)), (0, 0))
-                else: self.screen.fill((30,30,30))
+                    # OR for camera-scaled background (ensure self.current_background is large enough):
+                    # draw_background_scaled_with_camera(self.screen, self.current_background, self.camera.rect, self.WIDTH, self.HEIGHT)
+                else: self.screen.fill((30,30,30)) # Fallback bg color
                 
-                draw_objects(self.screen, self.player, self.platforms, self.npcs, self.enemies, self.camera.rect, self.zoom)
+                # Pass self.projectiles to draw_objects
+                draw_objects(self.screen, self.player, self.platforms, self.npcs, self.enemies, self.projectiles, self.camera.rect, self.zoom)
                 
                 if self.player and self.player.alive:
                     self.light_angle += 0.05 * (dt_seconds * self.FPS if dt_seconds > 0 else 1)
-                    draw_darkness_with_light(self.screen, self.player, self.camera.rect, self.zoom, int(100 + math.sin(self.light_angle) * 8))
+                    # draw_darkness_with_light(self.screen, self.player, self.camera.rect, self.zoom, int(100 + math.sin(self.light_angle) * 8)) # Optional light effect
 
-                # --- Interaction Prompt Drawing ---
+                # Interaction Prompt Drawing
                 if self.npc_interaction_candidate and not self.active_dialog:
+                    # ... (interaction prompt drawing remains the same)
                     prompt_text = "[E] Interact"
-                    prompt_surf = self.interaction_prompt_font.render(prompt_text, True, (255, 255, 255)) # White text
-                    
-                    # Position above the target NPC's head
+                    prompt_surf = self.interaction_prompt_font.render(prompt_text, True, (255, 255, 255))
                     npc_world_rect = self.npc_interaction_candidate.rect
                     prompt_world_x = npc_world_rect.centerx
-                    prompt_world_y = npc_world_rect.top - 7 # Pixels above NPC's rect.top
-
-                    # Convert world coordinates to screen coordinates
+                    prompt_world_y = npc_world_rect.top - 7 
                     prompt_screen_x = int((prompt_world_x - self.camera.rect.x) * self.zoom)
                     prompt_screen_y = int((prompt_world_y - self.camera.rect.y) * self.zoom)
-                    
                     prompt_display_rect = prompt_surf.get_rect(midbottom=(prompt_screen_x, prompt_screen_y))
-                    
-                    # Background for the prompt text for better visibility
-                    bg_padding_x = 5
-                    bg_padding_y = 2
+                    bg_padding_x = 5; bg_padding_y = 2
                     bg_rect = prompt_display_rect.inflate(bg_padding_x * 2, bg_padding_y * 2)
-                    
-                    # Draw a semi-transparent background rectangle for the prompt
-                    # Need a surface with SRCALPHA for the rect itself if you want alpha on the rect color
                     prompt_bg_surface = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
                     pygame.draw.rect(prompt_bg_surface, (0, 0, 0, 170), prompt_bg_surface.get_rect(), border_radius=3)
                     self.screen.blit(prompt_bg_surface, bg_rect.topleft)
-                    
-                    self.screen.blit(prompt_surf, prompt_display_rect) # Draw the text on top
+                    self.screen.blit(prompt_surf, prompt_display_rect)
 
-                # UI Elements
+                # UI Elements (Health, Geo, Coords)
+                # ... (UI drawing remains the same)
                 health_surf = self.font.render(f"Health: {self.player.health if self.player else 'N/A'}", True, (255,255,255))
                 self.screen.blit(health_surf, (10,10))
                 geo_surf = self.font.render(f"Geo: {self.player_data['geo']}", True, (255,223,0))
@@ -675,23 +746,29 @@ class Game:
                     coords_surf = self.font.render(f"Coords: ({int(self.player.rect.x)}, {int(self.player.rect.y)})", True, (200,200,200))
                     self.screen.blit(coords_surf, (10, 70))
 
-                if self.active_dialog and self.interacting_npc: # No need to check !self.dialog_choice_active if self.active_dialog is cleared
-                    pygame.draw.rect(self.screen, (30,30,30,210), self.dialog_box_rect)
-                    pygame.draw.rect(self.screen, (200,200,200), self.dialog_box_rect, 2)
+
+                # Dialog Box and Dialog Choice Prompt
+                if self.active_dialog and self.interacting_npc:
+                    # ... (dialog box drawing remains the same)
+                    pygame.draw.rect(self.screen, (30,30,30,210), self.dialog_box_rect) # Semi-transparent
+                    pygame.draw.rect(self.screen, (200,200,200), self.dialog_box_rect, 2) # Border
                     if 0 <= self.current_dialog_line_index < len(self.active_dialog):
                         draw_text(self.screen, self.active_dialog[self.current_dialog_line_index], self.dialog_font, (230,230,230), self.dialog_box_rect.inflate(-20,-20))
                     prompt_surf = self.dialog_font.render("E >", True, (180,180,180))
                     self.screen.blit(prompt_surf, (self.dialog_box_rect.right - prompt_surf.get_width()-10, self.dialog_box_rect.bottom - prompt_surf.get_height()-5))
-                if self.dialog_choice_active:
-                    self.draw_dialog_choice_prompt() # This will draw on top
+                
+                if self.dialog_choice_active: # Must be drawn after normal dialog box potentially
+                    self.draw_dialog_choice_prompt()
                 
                 if self.state == "paused":
+                    # ... (paused overlay drawing remains the same)
                     overlay = pygame.Surface((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
-                    overlay.fill((0,0,0,150))
+                    overlay.fill((0,0,0,150)) # alpha
                     self.screen.blit(overlay, (0,0))
                     resume_text = self.font.render("PAUSED - ESC to Resume", True, (255,255,255))
                     self.screen.blit(resume_text, resume_text.get_rect(center=(self.WIDTH/2, self.HEIGHT/2)))
             
             pygame.display.flip()
+        
         pygame.quit()
         sys.exit()
